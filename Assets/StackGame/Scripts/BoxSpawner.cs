@@ -41,7 +41,7 @@ public class BoxSpawner : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetMouseButtonDown(0))
 #elif UNITY_ANDROID || UNITY_IOS
-        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
+    if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)
 #endif
         {
             Rigidbody2D rb = currentBox.GetComponent<Rigidbody2D>();
@@ -66,6 +66,14 @@ public class BoxSpawner : MonoBehaviour
         canDrop = false;
         boxLanded = false;
         if (boxState != null) boxState.state = BoxState.State.Falling;
+        
+        // Trigger falling animation
+        BoxAnimationController animController = currentBox.GetComponent<BoxAnimationController>();
+        if (animController != null)
+        {
+            animController.ForceFallingState();
+        }
+        
         BoxLandingDetector detector = currentBox.AddComponent<BoxLandingDetector>();
         detector.spawner = this;
         detector.boxState = boxState;
@@ -80,6 +88,11 @@ public class BoxSpawner : MonoBehaviour
         GameObject boxToSpawn = GetNextBox();
         
         currentBox = Instantiate(boxToSpawn, transform.position, Quaternion.identity);
+        
+        // Ensure the box maintains its original scale
+        Vector3 originalScale = boxToSpawn.transform.localScale;
+        currentBox.transform.localScale = originalScale;
+        
         currentBox.GetComponent<Rigidbody2D>().gravityScale = 0f;
         BoxState boxState = currentBox.GetComponent<BoxState>();
         if (boxState != null) boxState.state = BoxState.State.Spawned;
@@ -88,6 +101,28 @@ public class BoxSpawner : MonoBehaviour
         if (boxVariations != null)
         {
             boxVariations.ApplyVisualEnhancements(currentBox);
+        }
+        
+        // Ensure scale is preserved after visual enhancements
+        currentBox.transform.localScale = originalScale;
+        
+        // Initialize animation controller
+        BoxAnimationController animController = currentBox.GetComponent<BoxAnimationController>();
+        if (animController != null)
+        {
+            // Disable all visual effects to reduce shaking
+            animController.usePulseOnSpawn = false;
+            animController.useShakeOnSettle = false;
+            animController.ForceSpawnedState();
+        }
+        
+        // Disable facial expression effects (keep blinking for expressions)
+        BoxFacialExpressions facialExpressions = currentBox.GetComponent<BoxFacialExpressions>();
+        if (facialExpressions != null)
+        {
+            facialExpressions.useShakeOnScared = false;
+            facialExpressions.useTearsOnFalling = false;
+            facialExpressions.useBlinking = true; // Keep blinking for facial expressions
         }
         
         isSpawning = false;
@@ -134,6 +169,16 @@ public class BoxSpawner : MonoBehaviour
             yield return null;
         }
         if (boxState != null) boxState.state = BoxState.State.Sleep;
+        
+        // Ensure settled animation is triggered
+        if (currentBox != null)
+        {
+            BoxAnimationController animController = currentBox.GetComponent<BoxAnimationController>();
+            if (animController != null)
+            {
+                animController.ForceSettledState();
+            }
+        }
         
         // Add score based on box type
         int pointsToAdd = GetBoxPoints(currentBox);
@@ -182,6 +227,13 @@ public class BoxLandingDetector : MonoBehaviour
             hasLanded = true;
             spawner.NotifyBoxLanded();
             if (boxState != null) boxState.state = BoxState.State.Sleep;
+            
+            // Trigger settled animation
+            BoxAnimationController animController = GetComponent<BoxAnimationController>();
+            if (animController != null)
+            {
+                animController.ForceSettledState();
+            }
         }
     }
 }

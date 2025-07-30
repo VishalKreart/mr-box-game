@@ -145,11 +145,11 @@ public class BoxVariations : MonoBehaviour
             }
         }
         
-        // Apply SimpleBoxBorder script
-        SimpleBoxBorder borderScript = spawnedBox.GetComponent<SimpleBoxBorder>();
+        // Apply EnhancedBoxBorder script (provides better physics separation)
+        EnhancedBoxBorder borderScript = spawnedBox.GetComponent<EnhancedBoxBorder>();
         if (borderScript == null)
         {
-            borderScript = spawnedBox.AddComponent<SimpleBoxBorder>();
+            borderScript = spawnedBox.AddComponent<EnhancedBoxBorder>();
         }
         
         // Configure the border
@@ -158,6 +158,8 @@ public class BoxVariations : MonoBehaviour
             borderScript.borderWidth = variation.borderWidth;
             borderScript.borderColor = variation.borderColor;
             borderScript.useShadow = variation.useShadow && useShadows;
+            borderScript.enhancePhysics = true; // Enable physics enhancement
+            borderScript.physicsEnhancement = variation.borderWidth * 0.4f; // Physics enhancement slightly thinner
             
             // Only override color if specifically requested
             if (variation.overridePrefabColor)
@@ -177,6 +179,8 @@ public class BoxVariations : MonoBehaviour
             borderScript.borderWidth = defaultBorderWidth;
             borderScript.borderColor = Color.black;
             borderScript.useShadow = useShadows;
+            borderScript.enhancePhysics = true;
+            borderScript.physicsEnhancement = defaultBorderWidth * 0.4f;
             borderScript.overrideBoxColor = false; // Don't override prefab colors
         }
         

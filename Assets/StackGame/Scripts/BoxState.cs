@@ -1,5 +1,5 @@
 using UnityEngine;
-
+ 
 public class BoxState : MonoBehaviour
 {
     public enum State { Spawned, Falling, Sleep }
