@@ -243,6 +243,11 @@ MonoBehaviour:
   useBlinking: 1
   blinkInterval: 2
   blinkDuration: 0.1
+  useHappyWink: 1
+  happyWinkMinInterval: 1
+  happyWinkMaxInterval: 2
+  happyWinkDuration: 0.2
+  happyWinkPause: 0.5
   useShakeOnScared: 1
   useTearsOnFalling: 1
   shakeIntensity: 0.02

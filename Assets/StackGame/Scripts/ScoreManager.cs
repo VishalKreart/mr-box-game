@@ -1,11 +1,12 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ScoreManager : MonoBehaviour
 {
     public static ScoreManager Instance;
-    public Text gameplayScoreText; // Assign in inspector
-    public Text gameOverScoreText; // Assign in inspector (on GameOverPanel)
+    public TextMeshProUGUI gameplayScoreText; // Assign in inspector
+    public TextMeshProUGUI gameOverScoreText; // Assign in inspector (on GameOverPanel)
     private int score = 0;
 
     void Awake()

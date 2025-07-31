@@ -3,6 +3,12 @@ using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.UI;
 
+public enum GameMode
+{
+    Classic,
+    TimeAttack
+}
+
 public class MainMenuManager : MonoBehaviour
 {
     [Header("UI Elements")]
@@ -16,6 +22,12 @@ public class MainMenuManager : MonoBehaviour
     public GameObject settingsPanel;
     public Button closeSettingsButton;
     public Button resetTutorialButton;
+    
+    [Header("Mode Selection Panel")]
+    public GameObject modeSelectPanel;
+    public Button classicModeButton;
+    public Button timeAttackModeButton;
+    public Button backToMenuButton;
     
     [Header("Animation")]
     public Animator titleAnimator; // Optional: for title animation
@@ -33,7 +45,7 @@ public class MainMenuManager : MonoBehaviour
     {
         // Main menu buttons
         if (playButton != null)
-            playButton.onClick.AddListener(StartGame);
+            playButton.onClick.AddListener(OpenModeSelection);
             
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OpenSettings);
@@ -47,22 +59,45 @@ public class MainMenuManager : MonoBehaviour
             
         if (resetTutorialButton != null)
             resetTutorialButton.onClick.AddListener(ResetTutorial);
+            
+        // Mode selection buttons
+        if (classicModeButton != null)
+            classicModeButton.onClick.AddListener(() => StartGame(GameMode.Classic));
+            
+        if (timeAttackModeButton != null)
+            timeAttackModeButton.onClick.AddListener(() => StartGame(GameMode.TimeAttack));
+            
+        if (backToMenuButton != null)
+            backToMenuButton.onClick.AddListener(ShowMainMenu);
     }
     
     void UpdateHighScore()
     {
         if (highScoreText != null)
         {
-            int highScore = PlayerPrefs.GetInt("HighScore", 0);
-            highScoreText.text = "High Score: " + highScore;
+            int classicHighScore = PlayerPrefs.GetInt("HighScore_Classic", 0);
+            int timeAttackHighScore = PlayerPrefs.GetInt("HighScore_TimeAttack", 0);
+            
+            highScoreText.text = "Classic: " + classicHighScore + "\nTime Attack: " + timeAttackHighScore;
         }
     }
     
-    public void StartGame()
+    public void OpenModeSelection()
     {
-        Debug.Log("Starting game...");
+        if (modeSelectPanel != null)
+        {
+            modeSelectPanel.SetActive(true);
+        }
+    }
+    
+    public void StartGame(GameMode mode)
+    {
+        Debug.Log("Starting game in " + mode + " mode...");
+        // Store the selected game mode
+        PlayerPrefs.SetInt("SelectedGameMode", (int)mode);
+        PlayerPrefs.Save();
         // Load the gameplay scene
-        SceneManager.LoadScene("MainScene"); // Make sure your gameplay scene is named "MainScene"
+        SceneManager.LoadScene("MainScene");
     }
     
     public void OpenSettings()
@@ -126,5 +161,7 @@ public class MainMenuManager : MonoBehaviour
     {
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
+        if (modeSelectPanel != null)
+            modeSelectPanel.SetActive(false);
     }
 } 

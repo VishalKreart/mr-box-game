@@ -23,10 +23,16 @@ public class BoxFacialExpressions : MonoBehaviour
     public float blinkInterval = 2f;
     public float blinkDuration = 0.1f;
     
+    [Header("Happy Winking Settings")]
+    public bool useHappyWink = true; // Happy wink animation for relaxed state
+    public float happyWinkMinInterval = 2f; // Minimum time between winks
+    public float happyWinkMaxInterval = 4f; // Maximum time between winks
+    public float happyWinkDuration = 0.2f; // How long each wink lasts
+    public float happyWinkPause = 0.5f; // Pause between double winks
+    
     [Header("Visual Effects")]
     public bool useShakeOnScared = false; // Disabled to reduce shaking
     public bool useTearsOnFalling = false; // Disabled to reduce shaking
-    public bool useHappyWink = true; // Happy wink animation for relaxed state
     public float shakeIntensity = 0.02f;
     public GameObject tearPrefab;
     
@@ -50,7 +56,6 @@ public class BoxFacialExpressions : MonoBehaviour
         if (mainRenderer != null)
         {
             mainRenderer.sortingOrder = 0;
-            Debug.Log("Main box sprite sorting order set to: " + mainRenderer.sortingOrder);
         }
         
         // Auto-position facial features correctly
@@ -60,7 +65,6 @@ public class BoxFacialExpressions : MonoBehaviour
             originalEyesPosition = eyesRenderer.transform.localPosition;
             // Set sorting order to render above main box sprite
             eyesRenderer.sortingOrder = 2;
-            Debug.Log("Eyes positioned at: " + eyesRenderer.transform.localPosition + " with sorting order: " + eyesRenderer.sortingOrder);
         }
         if (mouthRenderer != null)
         {
@@ -68,7 +72,6 @@ public class BoxFacialExpressions : MonoBehaviour
             originalMouthPosition = mouthRenderer.transform.localPosition;
             // Set sorting order to render above main box sprite
             mouthRenderer.sortingOrder = 2;
-            Debug.Log("Mouth positioned at: " + mouthRenderer.transform.localPosition + " with sorting order: " + mouthRenderer.sortingOrder);
         }
         
         // Start with scared expression (at spawner)
@@ -110,26 +113,14 @@ public class BoxFacialExpressions : MonoBehaviour
     
     public void SetScaredExpression()
     {
-        Debug.Log("Setting Scared Expression");
-        
         if (eyesRenderer != null && scaredEyes != null)
         {
             eyesRenderer.sprite = scaredEyes;
-            Debug.Log("Set scared eyes sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Eyes renderer or scared eyes sprite is null");
         }
         
         if (mouthRenderer != null && scaredMouth != null)
         {
             mouthRenderer.sprite = scaredMouth;
-            Debug.Log("Set scared mouth sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Mouth renderer or scared mouth sprite is null");
         }
         
         // Start scared shake effect
@@ -146,26 +137,14 @@ public class BoxFacialExpressions : MonoBehaviour
     
     public void SetScreamingExpression()
     {
-        Debug.Log("Setting Screaming Expression");
-        
         if (eyesRenderer != null && screamingEyes != null)
         {
             eyesRenderer.sprite = screamingEyes;
-            Debug.Log("Set screaming eyes sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Eyes renderer or screaming eyes sprite is null");
         }
         
         if (mouthRenderer != null && screamingMouth != null)
         {
             mouthRenderer.sprite = screamingMouth;
-            Debug.Log("Set screaming mouth sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Mouth renderer or screaming mouth sprite is null");
         }
         
         // Stop scared shake
@@ -182,26 +161,14 @@ public class BoxFacialExpressions : MonoBehaviour
     
     public void SetRelaxedExpression()
     {
-        Debug.Log("Setting Relaxed Expression");
-        
         if (eyesRenderer != null && relaxedEyes != null)
         {
             eyesRenderer.sprite = relaxedEyes;
-            Debug.Log("Set relaxed eyes sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Eyes renderer or relaxed eyes sprite is null");
         }
         
         if (mouthRenderer != null && relaxedMouth != null)
         {
             mouthRenderer.sprite = relaxedMouth;
-            Debug.Log("Set relaxed mouth sprite");
-        }
-        else
-        {
-            Debug.LogWarning("Mouth renderer or relaxed mouth sprite is null");
         }
         
         // Stop all effects
@@ -235,8 +202,8 @@ public class BoxFacialExpressions : MonoBehaviour
             // Only animate when box is in relaxed state
             if (boxState != null && boxState.state == BoxState.State.Sleep)
             {
-                // Wait random time between winks (2-4 seconds)
-                yield return new WaitForSeconds(Random.Range(2f, 4f));
+                // Wait random time between winks (using inspector settings)
+                yield return new WaitForSeconds(Random.Range(happyWinkMinInterval, happyWinkMaxInterval));
                 
                 // Wink left eye (if we have separate eye renderers)
                 if (eyesRenderer != null)
@@ -246,14 +213,14 @@ public class BoxFacialExpressions : MonoBehaviour
                     
                     // Quick wink effect
                     eyesRenderer.transform.localScale = new Vector3(originalScale.x * 0.3f, originalScale.y, originalScale.z);
-                    yield return new WaitForSeconds(0.2f);
+                    yield return new WaitForSeconds(happyWinkDuration);
                     eyesRenderer.transform.localScale = originalScale;
                     
-                    yield return new WaitForSeconds(0.5f);
+                    yield return new WaitForSeconds(happyWinkPause);
                     
                     // Wink again (right eye effect)
                     eyesRenderer.transform.localScale = new Vector3(originalScale.x * 0.3f, originalScale.y, originalScale.z);
-                    yield return new WaitForSeconds(0.2f);
+                    yield return new WaitForSeconds(happyWinkDuration);
                     eyesRenderer.transform.localScale = originalScale;
                 }
             }

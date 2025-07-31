@@ -16,6 +16,7 @@ public class BoxSpawner : MonoBehaviour
     private bool canDrop = true;
     private bool boxLanded = false;
     public bool externalDropControl = false; // Set true to disable internal input handling
+    private bool stopSpawning = false; // For Time Attack mode
 
     public GameObject GetCurrentBox() { return currentBox; }
 
@@ -82,6 +83,9 @@ public class BoxSpawner : MonoBehaviour
 
     IEnumerator SpawnNewBoxCoroutine()
     {
+        // Only spawn if not stopped (for Time Attack mode)
+        if (stopSpawning) yield break;
+        
         isSpawning = true;
         
         // Choose which box to spawn
@@ -127,7 +131,6 @@ public class BoxSpawner : MonoBehaviour
         
         isSpawning = false;
         canDrop = true;
-        yield return null;
     }
     
     private GameObject GetNextBox()
@@ -164,10 +167,28 @@ public class BoxSpawner : MonoBehaviour
     IEnumerator WaitForBoxToLand(Rigidbody2D rb, BoxState boxState)
     {
         // Wait until the box is nearly stopped and has landed
-        while (!(boxLanded && Mathf.Abs(rb.velocity.y) < 0.05f))
+        while (!(boxLanded && rb != null && Mathf.Abs(rb.velocity.y) < 0.05f))
         {
+            // Check if the box was destroyed
+            if (rb == null || currentBox == null)
+            {
+                Debug.Log("Box was destroyed, stopping coroutine");
+                currentBox = null;
+                isSpawning = false;
+                yield break;
+            }
             yield return null;
         }
+        
+        // Check again before proceeding
+        if (rb == null || currentBox == null)
+        {
+            Debug.Log("Box was destroyed before landing");
+            currentBox = null;
+            isSpawning = false;
+            yield break;
+        }
+        
         if (boxState != null) boxState.state = BoxState.State.Sleep;
         
         // Ensure settled animation is triggered
@@ -184,8 +205,24 @@ public class BoxSpawner : MonoBehaviour
         int pointsToAdd = GetBoxPoints(currentBox);
         if (ScoreManager.Instance != null) ScoreManager.Instance.AddScore(pointsToAdd);
         
+        // Notify Time Attack Manager (if in Time Attack mode)
+        TimeAttackManager timeAttackManager = FindObjectOfType<TimeAttackManager>();
+        if (timeAttackManager != null && timeAttackManager.IsTimeAttackMode())
+        {
+            timeAttackManager.OnBoxLanded();
+        }
+        
         currentBox = null;
-        yield return StartCoroutine(SpawnNewBoxCoroutine());
+        
+        // Check if we should continue spawning (for Time Attack mode)
+        if (!stopSpawning)
+        {
+            yield return StartCoroutine(SpawnNewBoxCoroutine());
+        }
+        else
+        {
+            isSpawning = false;
+        }
     }
     
     private int GetBoxPoints(GameObject box)
@@ -208,6 +245,13 @@ public class BoxSpawner : MonoBehaviour
     public void NotifyBoxLanded()
     {
         boxLanded = true;
+    }
+    
+    // Stop spawning boxes (for Time Attack mode)
+    public void StopSpawning()
+    {
+        stopSpawning = true;
+        Debug.Log("Box spawning stopped");
     }
 }
 
