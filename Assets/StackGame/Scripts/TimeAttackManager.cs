@@ -1,6 +1,8 @@
 using UnityEngine;
 using TMPro;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 
 public class TimeAttackManager : MonoBehaviour
 {
@@ -180,6 +182,9 @@ public class TimeAttackManager : MonoBehaviour
         // Save high score for Time Attack mode
         SaveTimeAttackHighScore(score);
         
+        // Save to new leaderboard system
+        SaveTimeAttackScoreToLeaderboard(score);
+        
         // Show normal game over with score
         if (gameOverPanel != null)
         {
@@ -217,6 +222,37 @@ public class TimeAttackManager : MonoBehaviour
             PlayerPrefs.Save();
             Debug.Log("New Time Attack High Score: " + score);
         }
+    }
+    
+    void SaveTimeAttackScoreToLeaderboard(int score)
+    {
+        // Create a new entry
+        LeaderboardEntry newEntry = new LeaderboardEntry("Player 1", score, GameMode.TimeAttack);
+        
+        // Get existing Time Attack leaderboard data
+        string existingData = PlayerPrefs.GetString("TimeAttackLeaderboard", "");
+        List<LeaderboardEntry> leaderboard = new List<LeaderboardEntry>();
+        
+        if (!string.IsNullOrEmpty(existingData))
+        {
+            var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(existingData);
+            if (wrapper != null && wrapper.entries != null)
+            {
+                leaderboard = wrapper.entries.ToList();
+            }
+        }
+        
+        // Add new score
+        leaderboard.Add(newEntry);
+        
+        // Sort and keep only top 10
+        leaderboard = leaderboard.OrderByDescending(x => x.score).Take(10).ToList();
+        
+        // Save back to PlayerPrefs
+        var newWrapper = new LeaderboardWrapper { entries = leaderboard.ToArray() };
+        string newData = JsonUtility.ToJson(newWrapper);
+        PlayerPrefs.SetString("TimeAttackLeaderboard", newData);
+        PlayerPrefs.Save();
     }
     
     void ShowFailedUI()

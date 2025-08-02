@@ -1,5 +1,30 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
+using System.Linq;
+
+[System.Serializable]
+public class LeaderboardEntry
+{
+    public string playerName;
+    public int score;
+    public string date;
+    public GameMode gameMode;
+
+    public LeaderboardEntry(string name, int score, GameMode mode)
+    {
+        this.playerName = name;
+        this.score = score;
+        this.date = System.DateTime.Now.ToString("MM/dd/yyyy");
+        this.gameMode = mode;
+    }
+}
+
+[System.Serializable]
+public class LeaderboardWrapper
+{
+    public LeaderboardEntry[] entries;
+}
 
 public class GameManager : MonoBehaviour
 {
@@ -61,6 +86,7 @@ public class GameManager : MonoBehaviour
             int selectedMode = PlayerPrefs.GetInt("SelectedGameMode", 0);
             GameMode gameMode = (GameMode)selectedMode;
             
+            // Save to legacy high score system (for backward compatibility)
             string highScoreKey = "";
             if (gameMode == GameMode.Classic)
             {
@@ -79,6 +105,78 @@ public class GameManager : MonoBehaviour
                 PlayerPrefs.Save();
                 Debug.Log("New " + gameMode + " High Score: " + currentScore);
             }
+            
+            // Save to new leaderboard system using PlayerPrefs for cross-scene communication
+            SaveScoreToLeaderboard(currentScore, gameMode);
+            
+            // Check if it's a new high score and show celebration
+            if (IsNewHighScore(currentScore, gameMode))
+            {
+                ShowNewHighScoreCelebration();
+            }
+            
+
         }
+    }
+    
+    private void ShowNewHighScoreCelebration()
+    {
+        // You can add visual/audio feedback here
+        Debug.Log("🎉 NEW HIGH SCORE! 🎉");
+        
+        // Optional: Show a popup or animation
+        // You can add UI elements for this later
+    }
+    
+    private void SaveScoreToLeaderboard(int score, GameMode gameMode)
+    {
+        // Create a temporary score entry
+        LeaderboardEntry newEntry = new LeaderboardEntry("Player 1", score, gameMode);
+        
+        // Get existing leaderboard data
+        string leaderboardKey = gameMode == GameMode.Classic ? "ClassicLeaderboard" : "TimeAttackLeaderboard";
+        string existingData = PlayerPrefs.GetString(leaderboardKey, "");
+        
+        List<LeaderboardEntry> leaderboard = new List<LeaderboardEntry>();
+        
+        if (!string.IsNullOrEmpty(existingData))
+        {
+            var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(existingData);
+            if (wrapper != null && wrapper.entries != null)
+            {
+                leaderboard = wrapper.entries.ToList();
+            }
+        }
+        
+        // Add new score
+        leaderboard.Add(newEntry);
+        
+        // Sort and keep only top 10
+        leaderboard = leaderboard.OrderByDescending(x => x.score).Take(10).ToList();
+        
+        // Save back to PlayerPrefs
+        var newWrapper = new LeaderboardWrapper { entries = leaderboard.ToArray() };
+        string newData = JsonUtility.ToJson(newWrapper);
+        PlayerPrefs.SetString(leaderboardKey, newData);
+        PlayerPrefs.Save();
+    }
+    
+    private bool IsNewHighScore(int score, GameMode gameMode)
+    {
+        string leaderboardKey = gameMode == GameMode.Classic ? "ClassicLeaderboard" : "TimeAttackLeaderboard";
+        string existingData = PlayerPrefs.GetString(leaderboardKey, "");
+        
+        if (string.IsNullOrEmpty(existingData))
+        {
+            return true; // First score is always a high score
+        }
+        
+        var wrapper = JsonUtility.FromJson<LeaderboardWrapper>(existingData);
+        if (wrapper != null && wrapper.entries != null && wrapper.entries.Length > 0)
+        {
+            return score > wrapper.entries[0].score;
+        }
+        
+        return true;
     }
 }

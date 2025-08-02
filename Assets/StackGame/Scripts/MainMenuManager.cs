@@ -13,6 +13,7 @@ public class MainMenuManager : MonoBehaviour
 {
     [Header("UI Elements")]
     public Button playButton;
+    public Button leaderboardButton;
     public Button settingsButton;
     public Button quitButton;
     public TextMeshProUGUI titleText;
@@ -46,6 +47,9 @@ public class MainMenuManager : MonoBehaviour
         // Main menu buttons
         if (playButton != null)
             playButton.onClick.AddListener(OpenModeSelection);
+            
+        if (leaderboardButton != null)
+            leaderboardButton.onClick.AddListener(OpenLeaderboard);
             
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OpenSettings);
@@ -87,6 +91,17 @@ public class MainMenuManager : MonoBehaviour
         if (modeSelectPanel != null)
         {
             modeSelectPanel.SetActive(true);
+        }
+    }
+    
+    public void OpenLeaderboard()
+    {
+        SimpleLeaderboardManager[] allManagers = FindObjectsOfType<SimpleLeaderboardManager>(true);
+        SimpleLeaderboardManager leaderboardManager = allManagers.Length > 0 ? allManagers[0] : null;
+        
+        if (leaderboardManager != null)
+        {
+            leaderboardManager.ShowLeaderboard();
         }
     }
     
