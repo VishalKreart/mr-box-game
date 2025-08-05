@@ -30,10 +30,17 @@ public class GameManager : MonoBehaviour
 {
     public GameObject gameOverPanel;
     public CameraStackFollow cameraStackFollow; // Assign in inspector
+    public BackgroundColorManager backgroundColorManager; // Assign in inspector
 
     public void GameOver()
     {
         Debug.Log("Game Over!");
+        
+        // Stop background color changes
+        if (backgroundColorManager != null)
+        {
+            backgroundColorManager.OnGameEnd();
+        }
         
         // Check if we're in Time Attack mode
         TimeAttackManager timeAttackManager = FindObjectOfType<TimeAttackManager>();
@@ -59,6 +66,12 @@ public class GameManager : MonoBehaviour
     public void RestartGame()
     {
         Time.timeScale = 1f;
+        
+        // Start fresh background color
+        if (backgroundColorManager != null)
+        {
+            backgroundColorManager.OnGameStart();
+        }
         
         // Reset Time Attack text if needed
         TimeAttackManager timeAttackManager = FindObjectOfType<TimeAttackManager>();
