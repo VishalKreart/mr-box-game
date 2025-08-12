@@ -221,14 +221,24 @@ public class TimeAttackManager : MonoBehaviour
             PlayerPrefs.SetInt("HighScore_TimeAttack", score);
             PlayerPrefs.Save();
             Debug.Log("New Time Attack High Score: " + score);
+
+            if (PlayFabManager.Instance != null)
+            {
+                PlayFabManager.Instance.SubmitScore(score, GameMode.TimeAttack);
+            }
+            else
+            {
+                Debug.LogWarning("PlayFabManager not found. Score not submitted to online leaderboard.");
+            }
         }
     }
     
     void SaveTimeAttackScoreToLeaderboard(int score)
     {
         // Create a new entry
-        LeaderboardEntry newEntry = new LeaderboardEntry("Player 1", score, GameMode.TimeAttack);
-        
+        string playerName = PlayerPrefs.GetString("PlayerDisplayName", "Player 1");
+        LeaderboardEntry newEntry = new LeaderboardEntry(playerName, score, GameMode.TimeAttack);
+
         // Get existing Time Attack leaderboard data
         string existingData = PlayerPrefs.GetString("TimeAttackLeaderboard", "");
         List<LeaderboardEntry> leaderboard = new List<LeaderboardEntry>();

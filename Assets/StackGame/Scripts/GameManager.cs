@@ -117,18 +117,27 @@ public class GameManager : MonoBehaviour
                 PlayerPrefs.SetInt(highScoreKey, currentScore);
                 PlayerPrefs.Save();
                 Debug.Log("New " + gameMode + " High Score: " + currentScore);
+                // Submit score to PlayFab online leaderboard
+                if (PlayFabManager.Instance != null)
+                {
+                    PlayFabManager.Instance.SubmitScore(currentScore, gameMode);
+                }
+                else
+                {
+                    Debug.LogWarning("PlayFabManager not found. Score not submitted to online leaderboard.");
+                }
             }
             
-            // Save to new leaderboard system using PlayerPrefs for cross-scene communication
+            // Save to local leaderboard system using PlayerPrefs for cross-scene communication
             SaveScoreToLeaderboard(currentScore, gameMode);
+            
+            
             
             // Check if it's a new high score and show celebration
             if (IsNewHighScore(currentScore, gameMode))
             {
                 ShowNewHighScoreCelebration();
             }
-            
-
         }
     }
     
@@ -144,7 +153,8 @@ public class GameManager : MonoBehaviour
     private void SaveScoreToLeaderboard(int score, GameMode gameMode)
     {
         // Create a temporary score entry
-        LeaderboardEntry newEntry = new LeaderboardEntry("Player 1", score, gameMode);
+        string playerName = PlayerPrefs.GetString("PlayerDisplayName", "Player 1");
+        LeaderboardEntry newEntry = new LeaderboardEntry(playerName, score, gameMode);
         
         // Get existing leaderboard data
         string leaderboardKey = gameMode == GameMode.Classic ? "ClassicLeaderboard" : "TimeAttackLeaderboard";

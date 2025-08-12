@@ -1978,10 +1978,10 @@ RectTransform:
   - {fileID: 1101327066}
   m_Father: {fileID: 331656274}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 574, y: -892}
-  m_SizeDelta: {x: 248.6541, y: 83.6047}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: -161, y: 278}
+  m_SizeDelta: {x: 248.65411, y: 83.60474}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1015068494
 MonoBehaviour:
@@ -2458,6 +2458,7 @@ MonoBehaviour:
   useDifficultyProgression: 1
   useWeightedSpawning: 1
   externalDropControl: 0
+  SafeAreaVerticalOffset: 0.5
 --- !u!1 &1557520144
 GameObject:
   m_ObjectHideFlags: 0
@@ -2699,7 +2700,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.3584906, g: 0.3567996, b: 0.3567996, a: 1}
+  m_Color: {r: 0.05660379, g: 0.049928814, b: 0.049928814, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2808,6 +2809,7 @@ GameObject:
   - component: {fileID: 1664398664}
   - component: {fileID: 1664398663}
   - component: {fileID: 1664398662}
+  - component: {fileID: 1664398666}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -2902,6 +2904,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!114 &1664398666
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1664398661}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1061ad93d77ec4922892a73b8d387d3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1688811788
 GameObject:
   m_ObjectHideFlags: 0

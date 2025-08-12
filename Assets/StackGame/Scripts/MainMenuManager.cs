@@ -23,6 +23,8 @@ public class MainMenuManager : MonoBehaviour
     public GameObject settingsPanel;
     public Button closeSettingsButton;
     public Button resetTutorialButton;
+    public TMP_InputField displayNameInputField;
+    public Button saveDisplayNameButton;
     
     [Header("Mode Selection Panel")]
     public GameObject modeSelectPanel;
@@ -35,11 +37,17 @@ public class MainMenuManager : MonoBehaviour
     
     private string originalResetButtonText = "Reset Tutorial";
     
+    [Header("First Launch Panel")]
+    public GameObject firstLaunchPanel;
+    public TMP_InputField firstLaunchNameInput;
+    public Button confirmNameButton;
+    public TextMeshProUGUI welcomeText;
+    
     void Start()
     {
         SetupButtons();
         UpdateHighScore();
-        ShowMainMenu();
+        CheckFirstLaunch();
     }
     
     void SetupButtons()
@@ -73,6 +81,12 @@ public class MainMenuManager : MonoBehaviour
             
         if (backToMenuButton != null)
             backToMenuButton.onClick.AddListener(ShowMainMenu);
+            
+        if (saveDisplayNameButton != null)
+            saveDisplayNameButton.onClick.AddListener(SaveDisplayName);
+            
+        if (confirmNameButton != null)
+            confirmNameButton.onClick.AddListener(SaveFirstLaunchName);
     }
     
     void UpdateHighScore()
@@ -96,12 +110,15 @@ public class MainMenuManager : MonoBehaviour
     
     public void OpenLeaderboard()
     {
-        SimpleLeaderboardManager[] allManagers = FindObjectsOfType<SimpleLeaderboardManager>(true);
-        SimpleLeaderboardManager leaderboardManager = allManagers.Length > 0 ? allManagers[0] : null;
-        
-        if (leaderboardManager != null)
+        // Find and show the PlayFab leaderboard, including inactive ones
+        PlayFabLeaderboardUI playFabLeaderboard = FindObjectOfType<PlayFabLeaderboardUI>(true);
+        if (playFabLeaderboard != null)
         {
-            leaderboardManager.ShowLeaderboard();
+            playFabLeaderboard.ShowLeaderboard(); // Defaults to Classic mode
+        }
+        else
+        {
+            Debug.LogWarning("PlayFabLeaderboardUI not found in the scene. Make sure it is present and configured.");
         }
     }
     
@@ -120,6 +137,9 @@ public class MainMenuManager : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(true);
+            // Load and show current display name
+            if (displayNameInputField != null)
+                displayNameInputField.text = PlayerPrefs.GetString("PlayerDisplayName", "");
         }
     }
     
@@ -172,11 +192,77 @@ public class MainMenuManager : MonoBehaviour
         #endif
     }
     
+    //public void ShowMainMenu()
+    //{
+    //    if (settingsPanel != null)
+    //        settingsPanel.SetActive(false);
+    //    if (modeSelectPanel != null)
+    //        modeSelectPanel.SetActive(false);
+    //}
+    
+    public void SaveDisplayName()
+    {
+        if (displayNameInputField != null)
+        {
+            string newName = displayNameInputField.text.Trim();
+            if (!string.IsNullOrEmpty(newName))
+            {
+                PlayerPrefs.SetString("PlayerDisplayName", newName);
+                PlayerPrefs.Save();
+                // Update PlayFab display name
+                if (PlayFabManager.Instance != null)
+                    PlayFabManager.Instance.UpdateDisplayName(newName);
+            }
+        }
+    }
+    
+    public void SaveFirstLaunchName()
+    {
+        if (firstLaunchNameInput != null)
+        {
+            string newName = firstLaunchNameInput.text.Trim();
+            if (!string.IsNullOrEmpty(newName))
+            {
+                PlayerPrefs.SetString("PlayerDisplayName", newName);
+                PlayerPrefs.Save();
+                
+                // Update PlayFab display name
+                PlayFabManager.Instance?.UpdateDisplayName(newName);
+                
+                // Hide first launch panel and show main menu
+                if (firstLaunchPanel != null)
+                    firstLaunchPanel.SetActive(false);
+                ShowMainMenu();
+            }
+        }
+    }
+    
     public void ShowMainMenu()
     {
+        if (firstLaunchPanel != null)
+            firstLaunchPanel.SetActive(false);
         if (settingsPanel != null)
             settingsPanel.SetActive(false);
         if (modeSelectPanel != null)
             modeSelectPanel.SetActive(false);
     }
-} 
+    
+    void CheckFirstLaunch()
+    {
+        if (!PlayerPrefs.HasKey("PlayerDisplayName"))
+        {
+            if (firstLaunchPanel != null)
+            {
+                firstLaunchPanel.SetActive(true);
+                if (welcomeText != null)
+                    welcomeText.text = "Welcome to Wobbly Tower!\nPlease enter your display name:";
+                if (firstLaunchNameInput != null)
+                    firstLaunchNameInput.text = "";
+            }
+        }
+        else
+        {
+            ShowMainMenu();
+        }
+    }
+}

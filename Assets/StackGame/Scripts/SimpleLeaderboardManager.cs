@@ -13,6 +13,7 @@ public class SimpleLeaderboardManager : MonoBehaviour
     public UnityEngine.UI.Button classicButton;
     public UnityEngine.UI.Button timeAttackButton;
     public UnityEngine.UI.Button closeButton;
+    public UnityEngine.UI.Button onlineLeaderboardButton;
     
     private GameMode currentMode = GameMode.Classic;
     
@@ -31,6 +32,9 @@ public class SimpleLeaderboardManager : MonoBehaviour
             
         if (closeButton != null)
             closeButton.onClick.AddListener(HideLeaderboard);
+            
+        if (onlineLeaderboardButton != null)
+            onlineLeaderboardButton.onClick.AddListener(ShowOnlineLeaderboard);
     }
     
     public void ShowLeaderboard()
@@ -135,4 +139,23 @@ public class SimpleLeaderboardManager : MonoBehaviour
     }
     
 
-} 
+    public void ShowOnlineLeaderboard()
+    {
+        // Hide this leaderboard panel
+        if (leaderboardPanel != null)
+        {
+            leaderboardPanel.SetActive(false);
+        }
+        
+        // Find and show the PlayFab leaderboard
+        PlayFabLeaderboardUI playFabLeaderboard = FindObjectOfType<PlayFabLeaderboardUI>();
+        if (playFabLeaderboard != null)
+        {
+            playFabLeaderboard.ShowLeaderboard(currentMode);
+        }
+        else
+        {
+            Debug.LogWarning("PlayFabLeaderboardUI not found in the scene.");
+        }
+    }
+}

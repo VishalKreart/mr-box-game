@@ -26,6 +26,32 @@ public class BoxSpawner : MonoBehaviour
         StartCoroutine(SpawnNewBoxCoroutine());
     }
 
+    [Header("Safe Area")]
+    public float SafeAreaVerticalOffset = 0f;
+
+    void AdjustForSafeArea()
+    {
+        if (Camera.main == null)
+        {
+            Debug.LogError("Main Camera not found!");
+            return;
+        }
+
+        // Get the top of the screen in world coordinates
+        float cameraZ = transform.position.z - Camera.main.transform.position.z;
+        Vector3 screenTop = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2, Screen.height, cameraZ));
+
+        // Get the top of the safe area in world coordinates
+        Rect safeArea = Screen.safeArea;
+        Vector3 safeAreaTop = Camera.main.ScreenToWorldPoint(new Vector3(Screen.width / 2, safeArea.yMax, cameraZ));
+
+        // Calculate the offset
+        float offsetY = screenTop.y - safeAreaTop.y + SafeAreaVerticalOffset;
+
+        // Apply the offset to the spawner's position
+        transform.position = new Vector3(transform.position.x, transform.position.y - offsetY, transform.position.z);
+    }
+
     void Update()
     {
         if (externalDropControl) return;
@@ -85,7 +111,7 @@ public class BoxSpawner : MonoBehaviour
     {
         // Only spawn if not stopped (for Time Attack mode)
         if (stopSpawning) yield break;
-        
+    
         isSpawning = true;
         
         // Choose which box to spawn
