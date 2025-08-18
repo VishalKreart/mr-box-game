@@ -15,6 +15,7 @@ public class MainMenuManager : MonoBehaviour
     public Button playButton;
     public Button leaderboardButton;
     public Button settingsButton;
+    public Button removeButton;
     public Button quitButton;
     public TextMeshProUGUI titleText;
     public TextMeshProUGUI highScoreText;
@@ -58,7 +59,16 @@ public class MainMenuManager : MonoBehaviour
             
         if (leaderboardButton != null)
             leaderboardButton.onClick.AddListener(OpenLeaderboard);
+
+
+        if (removeButton != null && MonetizationManager.Instance != null)
+        {
+            removeButton.gameObject.SetActive(!MonetizationManager.Instance.IsAdsRemoved());
+            removeButton.onClick.AddListener(BuyRemoveAds);
+            MonetizationManager.OnAdsRemoved += HandleAdsRemoved;
+        }
             
+
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OpenSettings);
             
@@ -88,7 +98,17 @@ public class MainMenuManager : MonoBehaviour
         if (confirmNameButton != null)
             confirmNameButton.onClick.AddListener(SaveFirstLaunchName);
     }
-    
+
+    private void OnDestroy()
+    {
+        MonetizationManager.OnAdsRemoved -= HandleAdsRemoved;
+    }
+
+    private void HandleAdsRemoved(bool removed)
+    {
+        removeButton.gameObject.SetActive(!removed);
+    }
+
     void UpdateHighScore()
     {
         if (highScoreText != null)
@@ -107,7 +127,14 @@ public class MainMenuManager : MonoBehaviour
             modeSelectPanel.SetActive(true);
         }
     }
-    
+
+    public void BuyRemoveAds()
+    {
+        if(MonetizationManager.Instance!= null)
+        MonetizationManager.Instance.PurchaseRemoveAds();
+    }
+
+
     public void OpenLeaderboard()
     {
         // Find and show the PlayFab leaderboard, including inactive ones
@@ -121,6 +148,20 @@ public class MainMenuManager : MonoBehaviour
             Debug.LogWarning("PlayFabLeaderboardUI not found in the scene. Make sure it is present and configured.");
         }
     }
+    
+    //public void OpenShop()
+    //{
+    //    // Find and show the shop UI
+    //    ShopUIManager shopUI = FindObjectOfType<ShopUIManager>();
+    //    if (shopUI != null)
+    //    {
+    //        shopUI.OpenShop();
+    //    }
+    //    else
+    //    {
+    //        Debug.LogWarning("ShopUIManager not found in the scene. Make sure it is present and configured.");
+    //    }
+    //}
     
     public void StartGame(GameMode mode)
     {
