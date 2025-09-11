@@ -210,6 +210,8 @@ public class TimeAttackManager : MonoBehaviour
         {
             failedText.gameObject.SetActive(false);
         }
+        // Show interstitial every 3rd game over (if ads not removed)
+        //MonetizationManager.Instance.OnGameOver();
     }
     
     void SaveTimeAttackHighScore(int score)
@@ -282,6 +284,7 @@ public class TimeAttackManager : MonoBehaviour
                 gameOverText.text = "FAILED!\nTower Fell";
                 gameOverText.color = Color.red;
             }
+            
         }
         
         // Hide the ScoreManager's game over score text
@@ -302,6 +305,9 @@ public class TimeAttackManager : MonoBehaviour
         {
             cameraStackFollow.ZoomOutOnGameOver();
         }
+
+        // Show interstitial every 3rd game over (if ads not removed)
+        //MonetizationManager.Instance.OnGameOver();
     }
     
     // Check if the tower is still standing

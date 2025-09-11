@@ -5,7 +5,7 @@ public class BoxAnimationController : MonoBehaviour
     [Header("Animation States")]
     public string spawnedAnimationTrigger = "Spawned";
     public string fallingAnimationTrigger = "Falling";
-    public string settledAnimationTrigger = "Settled";
+    public string smileAnimationTrigger = "Smile"; // Using smile animation instead of settled
     
     [Header("Animation Settings")]
     public float spawnAnimationDuration = 0.5f;
@@ -27,7 +27,7 @@ public class BoxAnimationController : MonoBehaviour
     void Start()
     {
         animator = GetComponent<Animator>();
-        boxState = GetComponent<BoxState>();
+        boxState = GetComponentInParent<BoxState>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         originalPosition = transform.position;
         
@@ -69,11 +69,11 @@ public class BoxAnimationController : MonoBehaviour
         }
         
         // Trigger scared facial expression
-        BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
-        if (facialExpressions != null)
-        {
-            facialExpressions.ForceScaredExpression();
-        }
+        //BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
+        //if (facialExpressions != null)
+        //{
+        //    facialExpressions.ForceScaredExpression();
+        //}
     }
     
     public void PlayFallingAnimation()
@@ -85,32 +85,27 @@ public class BoxAnimationController : MonoBehaviour
         }
         
         // Trigger screaming facial expression
-        BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
-        if (facialExpressions != null)
-        {
-            facialExpressions.ForceScreamingExpression();
-        }
+        //BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
+        //if (facialExpressions != null)
+        //{
+        //    facialExpressions.ForceScreamingExpression();
+        //}
     }
     
     public void PlaySettledAnimation()
     {
         if (animator != null)
         {
-            animator.SetTrigger(settledAnimationTrigger);
-            animator.speed = 1f; // Reset speed
+            // Use the smile animation trigger directly
+            animator.SetTrigger(smileAnimationTrigger);
         }
         
-        if (useShakeOnSettle)
-        {
-            StartCoroutine(ShakeAnimation());
-        }
-        
-        // Trigger relaxed facial expression
-        BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
-        if (facialExpressions != null)
-        {
-            facialExpressions.ForceRelaxedExpression();
-        }
+        // Trigger happy facial expression
+        //BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
+        //if (facialExpressions != null)
+        //{
+        //    facialExpressions.ForceHappyExpression();
+        //}
     }
     
     private System.Collections.IEnumerator PulseAnimation()
@@ -194,6 +189,7 @@ public class BoxAnimationController : MonoBehaviour
             boxState.state = BoxState.State.Sleep;
         }
         PlaySettledAnimation();
+        
     }
     
     // Method to reset animations
@@ -203,7 +199,7 @@ public class BoxAnimationController : MonoBehaviour
         {
             animator.ResetTrigger(spawnedAnimationTrigger);
             animator.ResetTrigger(fallingAnimationTrigger);
-            animator.ResetTrigger(settledAnimationTrigger);
+            animator.ResetTrigger(smileAnimationTrigger); // Reset smile animation trigger
             animator.speed = 1f;
         }
         

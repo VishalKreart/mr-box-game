@@ -1,6 +1,14 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Purchasing;
+
+[System.Serializable]
+public class PurchaseCallbackWrapper
+{
+    public readonly System.Action<bool> Callback;
+    public PurchaseCallbackWrapper(System.Action<bool> callback) => Callback = callback;
+}
 
 public class MonetizationManager : MonoBehaviour, IStoreListener
 {
@@ -15,8 +23,10 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
     // IAP
     private const string REMOVE_ADS = "remove_ads"; // Non-consumable
+    private const string SAVE_TOWER = "save_tower"; // Consumable
     private IStoreController storeController;
     private bool iapInitialized;
+    private Dictionary<string, PurchaseCallbackWrapper> purchaseCallbacks = new Dictionary<string, PurchaseCallbackWrapper>();
 
     // State
     public bool adsRemoved = false; // kept public for legacy reads
@@ -24,8 +34,6 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
     // Optional: notify UI if Watch Ad pressed but no ad available
     public event Action OnNoRewardedAdAvailable;
-
-
     public static event Action<bool> OnAdsRemoved;
 
     private void Awake()
@@ -139,6 +147,28 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         ShowRewardedAd(() => { /* handled by UI caller; we keep for back-compat */ });
     }
 
+    /// <summary>
+    /// Show rewarded ad specifically for saving the tower with rebalancing.
+    /// </summary>
+    public void ShowSaveTowerAd(System.Action onTowerSaved)
+    {
+        ShowRewardedAd(() => {
+            Debug.Log("[MonetizationManager] Tower save ad completed successfully!");
+            onTowerSaved?.Invoke();
+            
+            // Apply tower rebalancing effect
+            TowerRebalancer rebalancer = FindObjectOfType<TowerRebalancer>();
+            if (rebalancer != null)
+            {
+                rebalancer.RebalanceTower();
+            }
+            else
+            {
+                Debug.LogWarning("TowerRebalancer not found! Tower won't be rebalanced.");
+            }
+        });
+    }
+
     // ---------------- Interstitial ----------------
     /// <summary>
     /// Legacy hook. Call this at real Game Over to maybe show interstitial.
@@ -217,29 +247,67 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         Debug.LogError($"[MonetizationManager] IAP Init Failed: {error} - {message}");
     }
 
-    public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs e)
+    public void PurchaseProduct(string productId, Action<bool> onComplete)
     {
-        if (e.purchasedProduct.definition.id == REMOVE_ADS)
+        if (!iapInitialized)
+        {
+            Debug.LogError("IAP not initialized");
+            onComplete?.Invoke(false);
+            return;
+        }
+
+        var product = storeController.products.WithID(productId);
+        if (product != null && product.availableToPurchase)
+        {
+            var callback = new System.Action<bool>((success) =>
+            {
+                onComplete?.Invoke(success);
+            });
+
+            var wrapper = new PurchaseCallbackWrapper(callback);
+            purchaseCallbacks[productId] = wrapper;
+            storeController.InitiatePurchase(product);
+        }
+        else
+        {
+            Debug.LogError($"Product {productId} not available for purchase");
+            onComplete?.Invoke(false);
+        }
+    }
+
+    public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
+    {
+        var productId = args.purchasedProduct.definition.id;
+        if (purchaseCallbacks.TryGetValue(productId, out var wrapper))
+        {
+            wrapper.Callback(true);
+            purchaseCallbacks.Remove(productId);
+        }
+        
+        if (productId == REMOVE_ADS)
         {
             HandleRemoveAdsPurchased();
         }
+        
         return PurchaseProcessingResult.Complete;
     }
 
     public void OnPurchaseFailed(Product product, PurchaseFailureReason reason)
     {
         Debug.LogError($"[MonetizationManager] IAP Purchase Failed: {product?.definition?.id} - {reason}");
+        if (product != null && purchaseCallbacks.TryGetValue(product.definition.id, out var wrapper))
+        {
+            wrapper.Callback(false);
+            purchaseCallbacks.Remove(product.definition.id);
+        }
     }
 
-    // ---------------- Persistence ----------------
     private void HandleRemoveAdsPurchased()
     {
         adsRemoved = true;
         SaveState();
         Debug.Log("Remove Ads purchased — ads disabled.");
-
-        OnAdsRemoved?.Invoke(true); // ✅ Notify listeners
-
+        OnAdsRemoved?.Invoke(true);
         try { IronSource.Agent.hideBanner(); } catch { }
     }
 
@@ -256,6 +324,6 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         gamesSinceInterstitial = PlayerPrefs.GetInt("MM_GamesSinceInterstitial", 0);
     }
 
-    // ---------------- Legacy events kept ----------------
+    // Legacy events
     public static event Action OnContinueUsed;
 }

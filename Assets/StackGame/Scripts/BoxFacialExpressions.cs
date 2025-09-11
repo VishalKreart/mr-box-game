@@ -94,7 +94,7 @@ public class BoxFacialExpressions : MonoBehaviour
     {
         if (boxState == null) return;
         
-        // Update expression based on current state
+        // Update facial expression based on box state
         switch (boxState.state)
         {
             case BoxState.State.Spawned:
@@ -106,7 +106,7 @@ public class BoxFacialExpressions : MonoBehaviour
                 break;
                 
             case BoxState.State.Sleep:
-                SetRelaxedExpression();
+                ForceHappyExpression();
                 break;
         }
     }
@@ -377,7 +377,7 @@ public class BoxFacialExpressions : MonoBehaviour
         SetScreamingExpression();
     }
     
-    public void ForceRelaxedExpression()
+    public void ForceHappyExpression()
     {
         SetRelaxedExpression();
     }

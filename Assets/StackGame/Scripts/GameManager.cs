@@ -28,6 +28,12 @@ public class LeaderboardWrapper
 
 public class GameManager : MonoBehaviour
 {
+
+    public GameObject saveTowerPanel; // Assign in inspector
+    public SaveTowerUI saveTowerUI;   // Assign in inspector
+
+
+
     public GameObject gameOverPanel;
     public CameraStackFollow cameraStackFollow; // Assign in inspector
     public BackgroundColorManager backgroundColorManager; // Assign in inspector
@@ -35,7 +41,14 @@ public class GameManager : MonoBehaviour
     [Header("Refs")]
     [SerializeField] public ContinueUIManager continueUI;
 
-    private bool isGameOver = false;
+    public bool isGameOver = false;
+
+
+    private void Start()
+    {
+        // Make sure it starts hidden
+        saveTowerPanel.SetActive(false);
+    }
 
     public void GameOver()
     {
