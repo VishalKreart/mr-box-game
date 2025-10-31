@@ -33,8 +33,7 @@ public class MainMenuManager : MonoBehaviour
     public Button timeAttackModeButton;
     public Button backToMenuButton;
     
-    [Header("Animation")]
-    public Animator titleAnimator; // Optional: for title animation
+    
     
     private string originalResetButtonText = "Reset Tutorial";
     
@@ -42,7 +41,7 @@ public class MainMenuManager : MonoBehaviour
     public GameObject firstLaunchPanel;
     public TMP_InputField firstLaunchNameInput;
     public Button confirmNameButton;
-    public TextMeshProUGUI welcomeText;
+    //public TextMeshProUGUI welcomeText;
     
     void Start()
     {
@@ -295,8 +294,7 @@ public class MainMenuManager : MonoBehaviour
             if (firstLaunchPanel != null)
             {
                 firstLaunchPanel.SetActive(true);
-                if (welcomeText != null)
-                    welcomeText.text = "Welcome to Wobbly Tower!\nPlease enter your display name:";
+                
                 if (firstLaunchNameInput != null)
                     firstLaunchNameInput.text = "";
             }

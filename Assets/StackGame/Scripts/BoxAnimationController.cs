@@ -2,6 +2,15 @@ using UnityEngine;
 
 public class BoxAnimationController : MonoBehaviour
 {
+
+    private AnimatorOverrideController overrideController;
+
+    [Header("Animation Clips")]
+    public AnimationClip[] spawnClips;
+    public AnimationClip[] fallClips;
+    public AnimationClip[] settleClips;
+
+
     [Header("Animation States")]
     public string spawnedAnimationTrigger = "Spawned";
     public string fallingAnimationTrigger = "Falling";
@@ -23,6 +32,7 @@ public class BoxAnimationController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private Vector3 originalScale;
     private Vector3 originalPosition;
+    private bool hasSettled = false;
     
     void Start()
     {
@@ -31,35 +41,73 @@ public class BoxAnimationController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         originalPosition = transform.position;
         
+         // Make a copy of runtime controller
+        overrideController = new AnimatorOverrideController(animator.runtimeAnimatorController);
+        animator.runtimeAnimatorController = overrideController;
         // Don't capture scale here - it might be 0
         // We'll capture it when needed
     }
     
+    // void Update()
+    // {
+    //     if (boxState == null) return;
+        
+    //     // Update animation based on current state
+    //     switch (boxState.state)
+    //     {
+    //         case BoxState.State.Spawned:
+    //             // Spawned animation is already playing
+    //             break;
+                
+    //         case BoxState.State.Falling:
+    //             PlayFallingAnimation();
+    //             break;
+                
+    //         case BoxState.State.Sleep:
+    //             PlaySettledAnimation();
+    //             break;
+    //     }
+    // }
+    
+    private BoxState.State? lastState = null;
+
     void Update()
     {
         if (boxState == null) return;
-        
-        // Update animation based on current state
-        switch (boxState.state)
+
+        // Only act when state changes
+        if (boxState.state != lastState)
         {
-            case BoxState.State.Spawned:
-                // Spawned animation is already playing
-                break;
-                
-            case BoxState.State.Falling:
-                PlayFallingAnimation();
-                break;
-                
-            case BoxState.State.Sleep:
-                PlaySettledAnimation();
-                break;
+            // Prevent further animation changes after settling
+            if (hasSettled && boxState.state != BoxState.State.Spawned)
+            {
+                return;
+            }
+            switch (boxState.state)
+            {
+                case BoxState.State.Spawned:
+                    PlaySpawnedAnimation();
+                    break;
+
+                case BoxState.State.Falling:
+                    PlayFallingAnimation();
+                    break;
+
+                case BoxState.State.Sleep:
+                    PlaySettledAnimation();
+                    hasSettled = true;
+                    break;
+            }
+            lastState = boxState.state; // remember last state
         }
     }
-    
+
+
     public void PlaySpawnedAnimation()
     {
         if (animator != null)
         {
+            overrideController["spawn"] = spawnClips[Random.Range(0, spawnClips.Length)];
             animator.SetTrigger(spawnedAnimationTrigger);
         }
         
@@ -80,6 +128,7 @@ public class BoxAnimationController : MonoBehaviour
     {
         if (animator != null)
         {
+            overrideController["falling"] = fallClips[Random.Range(0, fallClips.Length)];
             animator.SetTrigger(fallingAnimationTrigger);
             animator.speed = fallAnimationSpeed;
         }
@@ -94,18 +143,12 @@ public class BoxAnimationController : MonoBehaviour
     
     public void PlaySettledAnimation()
     {
-        if (animator != null)
-        {
-            // Use the smile animation trigger directly
-            animator.SetTrigger(smileAnimationTrigger);
-        }
-        
-        // Trigger happy facial expression
-        //BoxFacialExpressions facialExpressions = GetComponent<BoxFacialExpressions>();
-        //if (facialExpressions != null)
-        //{
-        //    facialExpressions.ForceHappyExpression();
-        //}
+        if (animator == null) return;
+        animator.ResetTrigger(spawnedAnimationTrigger);
+        animator.ResetTrigger(fallingAnimationTrigger);
+        overrideController["smile"] = settleClips[Random.Range(0, settleClips.Length)];
+        animator.SetTrigger(smileAnimationTrigger);
+        hasSettled = true;
     }
     
     private System.Collections.IEnumerator PulseAnimation()
@@ -202,8 +245,8 @@ public class BoxAnimationController : MonoBehaviour
             animator.ResetTrigger(smileAnimationTrigger); // Reset smile animation trigger
             animator.speed = 1f;
         }
-        
+        hasSettled = false;
         transform.localScale = originalScale;
         transform.position = originalPosition;
     }
-} 
+}

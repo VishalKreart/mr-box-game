@@ -119,6 +119,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 629e2427aa03b4aee84d9a2b33a3148b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  spawnClips:
+  - {fileID: 7400000, guid: 2e35f5062cb4f40259d96e300926a45f, type: 2}
+  - {fileID: 7400000, guid: fb24d55623a6d48eaae7f9bdfaecee60, type: 2}
+  - {fileID: 7400000, guid: 9a8c0687486db4066984ac6a48b5be77, type: 2}
+  fallClips:
+  - {fileID: 7400000, guid: 4210a38a2d8584f0c83fe9245f77838c, type: 2}
+  - {fileID: 7400000, guid: 02f76dc5d1b654cc9ba8071876cbec17, type: 2}
+  - {fileID: 7400000, guid: ce9398c68b41540e78abed0305db3535, type: 2}
+  settleClips:
+  - {fileID: 7400000, guid: a957ea0ba8ad34200bbf3547c385f251, type: 2}
+  - {fileID: 7400000, guid: 7f94f3d9f50bb4b6f804adbb2f5e29f1, type: 2}
   spawnedAnimationTrigger: Spawned
   fallingAnimationTrigger: Falling
   smileAnimationTrigger: Smile

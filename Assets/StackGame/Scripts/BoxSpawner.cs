@@ -335,8 +335,8 @@ public class BoxSpawner : MonoBehaviour
         if (animController != null)
         {
             // Disable all visual effects to reduce shaking
-            animController.usePulseOnSpawn = false;
-            animController.useShakeOnSettle = false;
+            //animController.usePulseOnSpawn = false;
+            //animController.useShakeOnSettle = false;
             animController.ForceSpawnedState();
         }
         
