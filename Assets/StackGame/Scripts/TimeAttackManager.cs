@@ -22,7 +22,7 @@ public class TimeAttackManager : MonoBehaviour
     
     [Header("UI Elements")]
     public TextMeshProUGUI timerText;
-    public GameObject timeAttackUI;
+    //public GameObject timeAttackUI;
     public TextMeshProUGUI failedText; // FAILED text for Time Attack mode
     public GameObject gameOverPanel; // Reference to game over panel
     
@@ -57,8 +57,8 @@ public class TimeAttackManager : MonoBehaviour
         else
         {
             // Hide Time Attack UI for Classic mode
-            if (timeAttackUI != null)
-                timeAttackUI.SetActive(false);
+            if (timerText != null)
+                timerText.gameObject.SetActive(false);
         }
     }
     
@@ -67,8 +67,8 @@ public class TimeAttackManager : MonoBehaviour
         Debug.Log("Initializing Time Attack Mode with " + timeLimit + " seconds");
         
         // Show Time Attack UI
-        if (timeAttackUI != null)
-            timeAttackUI.SetActive(true);
+        if (timerText != null)
+            timerText.gameObject.SetActive(true);
             
         // Initialize timer with the time limit from inspector
         currentTime = timeLimit;

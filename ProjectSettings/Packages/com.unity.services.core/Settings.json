@@ -1,4 +1,11 @@
 {
   "EnvironmentName": "production",
-  "EnvironmentId": "89cf5e6e-8267-4516-94b4-20ffb17c89e9"
+  "EnvironmentId": "89cf5e6e-8267-4516-94b4-20ffb17c89e9",
+  "[csharp]": {
+    "editor.defaultFormatter": "csharpier.csharpier-vscode"
+  },
+  "[xml]": {
+    "editor.defaultFormatter": "csharpier.csharpier-vscode"
+  }
 }
+ 

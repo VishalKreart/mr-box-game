@@ -29,8 +29,8 @@ public class LeaderboardWrapper
 public class GameManager : MonoBehaviour
 {
 
-    public GameObject saveTowerPanel; // Assign in inspector
-    public SaveTowerUI saveTowerUI;   // Assign in inspector
+    //public GameObject saveTowerPanel; // Assign in inspector
+    //public SaveTowerUI saveTowerUI;   // Assign in inspector
 
 
 
@@ -47,7 +47,7 @@ public class GameManager : MonoBehaviour
     private void Start()
     {
         // Make sure it starts hidden
-        saveTowerPanel.SetActive(false);
+        //saveTowerPanel.SetActive(false);
     }
 
     public void GameOver()

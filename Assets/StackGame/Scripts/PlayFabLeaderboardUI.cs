@@ -22,14 +22,8 @@ public class PlayFabLeaderboardUI : MonoBehaviour
     public GameObject playerPositionContainer; // Container for the fixed player position entry
     public GameObject playerEntryPrefab; // Can be the same as entryPrefab or a different one
     
-    [Header("UI Settings")]
-    public Color highlightColor = new Color(1f, 0.92f, 0.016f, 1f); // Yellow
-    public Color normalColor = Color.white;
+   
     
-    [Header("Trophy Sprites")]
-    public Sprite goldTrophy;
-    public Sprite silverTrophy;
-    public Sprite bronzeTrophy;
     
     private GameMode currentMode = GameMode.Classic;
     private bool isRefreshing = false;
@@ -190,11 +184,13 @@ public class PlayFabLeaderboardUI : MonoBehaviour
             }
             return;
         }
-        
-        // Create entries for each leaderboard entry
-        foreach (var entry in leaderboard)
+
+        // Show only top 20
+        int count = Mathf.Min(20, leaderboard.Count);
+
+        for (int i = 0; i < count; i++)
         {
-            CreateLeaderboardEntry(entry);
+            CreateLeaderboardEntry(leaderboard[i]);
         }
     }
     
@@ -261,26 +257,26 @@ public class PlayFabLeaderboardUI : MonoBehaviour
         
         // Get references to the TextMeshProUGUI components
         TextMeshProUGUI[] texts = entryGO.GetComponentsInChildren<TextMeshProUGUI>();
-        Image trophyIcon = entryGO.transform.Find("TrophyIcon").GetComponent<Image>(); // Assuming you have an Image component for the trophy
 
-        if (texts.Length >= 3 && trophyIcon != null)
+
+
+       
+
+
+        if (texts.Length >= 3)
         {
-            // Default state
-            trophyIcon.gameObject.SetActive(false);
+            
             texts[0].gameObject.SetActive(true);
 
             // Rank & Trophies
             int rank = entry.Position + 1;
             texts[0].text = rank.ToString();
 
-            if (rank <= 3)
-            {
-                trophyIcon.gameObject.SetActive(true);
-                texts[0].gameObject.SetActive(false);
-                if (rank == 1) trophyIcon.sprite = goldTrophy;
-                else if (rank == 2) trophyIcon.sprite = silverTrophy;
-                else if (rank == 3) trophyIcon.sprite = bronzeTrophy;
-            }
+
+
+            var entryUI = entryGO.GetComponent<LeaderboardEntryUI>();
+
+            
 
             // Player Name
             string playerName = string.IsNullOrEmpty(entry.DisplayName) ? 
@@ -291,27 +287,8 @@ public class PlayFabLeaderboardUI : MonoBehaviour
             texts[2].text = entry.StatValue.ToString();
 
             // Highlight if this is the current player in the top 10
-            Image background = entryGO.GetComponent<Image>();
-            if (background != null)
-            {
-                bool isPlayer = PlayFabManager.Instance != null && entry.PlayFabId == PlayFabManager.Instance.PlayFabId;
-                if (isPlayer && rank <= 10)
-                {
-                    background.color = highlightColor;
-                    foreach (var text in texts)
-                    {
-                        text.fontStyle = FontStyles.Bold;
-                    }
-                }
-                else
-                {
-                    background.color = normalColor;
-                    foreach (var text in texts)
-                    {
-                        text.fontStyle = FontStyles.Normal;
-                    }
-                }
-            }
+            entryUI.Setup(rank, false);
+            
         }
     }
 
@@ -325,12 +302,11 @@ public class PlayFabLeaderboardUI : MonoBehaviour
 
         // Get references to the TextMeshProUGUI components
         TextMeshProUGUI[] texts = entryGO.GetComponentsInChildren<TextMeshProUGUI>();
-        Image trophyIcon = entryGO.transform.Find("TrophyIcon").GetComponent<Image>();
 
-        if (texts.Length >= 3 && trophyIcon != null)
+        var entryUI = entryGO.GetComponent<LeaderboardEntryUI>();
+
+        if (texts.Length >= 3)
         {
-            // Always hide trophy and show rank for the static entry
-            trophyIcon.gameObject.SetActive(false);
             texts[0].gameObject.SetActive(true);
 
             // Rank - Always show for static entry
@@ -342,13 +318,8 @@ public class PlayFabLeaderboardUI : MonoBehaviour
             // Score
             texts[2].text = entry.StatValue.ToString();
 
-            // Highlight the current player's entry
-            Image background = entryGO.GetComponent<Image>();
-            if (background != null)
-            {
-                background.color = highlightColor;
-            }
-
+            
+            entryUI.Setup(entry.Position + 1, true);
             // Make text bold
             foreach (var text in texts)
             {
@@ -371,26 +342,9 @@ public class PlayFabLeaderboardUI : MonoBehaviour
     
     private void UpdateButtonHighlights()
     {
-        if (classicButton != null && timeAttackButton != null)
-        {
-            // Get the button colors
-            ColorBlock classicColors = classicButton.colors;
-            ColorBlock timeAttackColors = timeAttackButton.colors;
-            
-            // Reset both buttons
-            classicColors.normalColor = Color.white;
-            timeAttackColors.normalColor = Color.white;
-            
-            // Highlight the selected button
-            if (currentMode == GameMode.Classic)
-                classicColors.normalColor = highlightColor;
-            else
-                timeAttackColors.normalColor = highlightColor;
-                
-            // Apply the colors
-            classicButton.colors = classicColors;
-            timeAttackButton.colors = timeAttackColors;
-        }
+        
+        classicButton.interactable = currentMode != GameMode.Classic;
+        timeAttackButton.interactable = currentMode != GameMode.TimeAttack;
     }
     
     private void UpdateTitleText()

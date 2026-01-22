@@ -42,7 +42,7 @@ public class HandController : MonoBehaviour
     public void PlayTapAnimation()
     {
         ShowHand();
-        animator.SetTrigger("ShowTap");
+        //animator.SetTrigger("ShowTap");
     }
 
     public void PlayHideAnimation()

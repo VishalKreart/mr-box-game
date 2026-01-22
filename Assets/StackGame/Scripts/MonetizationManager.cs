@@ -22,14 +22,15 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     [SerializeField] private int interstitialEveryXGames = 3;
 
     // IAP
-    private const string REMOVE_ADS = "remove_ads"; // Non-consumable
+    private const string NO_ADS_WEEKLY = "no_ads_weekly"; // Subscription
+
     private const string SAVE_TOWER = "save_tower"; // Consumable
     private IStoreController storeController;
     private bool iapInitialized;
     private Dictionary<string, PurchaseCallbackWrapper> purchaseCallbacks = new Dictionary<string, PurchaseCallbackWrapper>();
 
     // State
-    public bool adsRemoved = false; // kept public for legacy reads
+    private bool noAdsSubscriptionActive;
     private int gamesSinceInterstitial = 0;
 
     // Optional: notify UI if Watch Ad pressed but no ad available
@@ -206,7 +207,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     private void InitializeIAP()
     {
         var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
-        builder.AddProduct(REMOVE_ADS, ProductType.NonConsumable);
+        builder.AddProduct(NO_ADS_WEEKLY, ProductType.Subscription);
         UnityPurchasing.Initialize(this, builder);
     }
 
@@ -214,25 +215,58 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     {
         if (iapInitialized && storeController != null)
         {
-            Debug.Log("[MonetizationManager] IAP REMOVE ADS started");
-            storeController.InitiatePurchase(REMOVE_ADS);
+            storeController.InitiatePurchase(NO_ADS_WEEKLY);
         }
         else
         {
             Debug.LogError("[MonetizationManager] IAP not initialized.");
         }
     }
+    public void PurchaseNoAdsWeekly()
+    {
+        if (iapInitialized && storeController != null)
+        {
+            storeController.InitiatePurchase(NO_ADS_WEEKLY);
+        }
+    }
 
-    public bool IsAdsRemoved() => adsRemoved;
+
+    public bool IsAdsRemoved() => noAdsSubscriptionActive;
+
+    private void UpdateSubscriptionState(Product product)
+    {
+        if (product == null || !product.hasReceipt)
+        {
+            noAdsSubscriptionActive = false;
+            return;
+        }
+
+#if UNITY_ANDROID || UNITY_IOS
+    var subscriptionManager = new SubscriptionManager(product, null);
+    var info = subscriptionManager.getSubscriptionInfo();
+
+    noAdsSubscriptionActive =
+        info.isSubscribed() == Result.True &&
+        info.isExpired() == Result.False;
+#else
+        noAdsSubscriptionActive = false;
+#endif
+    }
+
 
     public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
     {
         storeController = controller;
         iapInitialized = true;
-        Debug.Log("[MonetizationManager] IAP Initialized.");
-        foreach (var p in controller.products.all)
+
+        var product = controller.products.WithID(NO_ADS_WEEKLY);
+        UpdateSubscriptionState(product);
+
+        if (noAdsSubscriptionActive)
         {
-            Debug.Log($"IAP Product available: {p.definition.id} ({p.definition.type})");
+            Debug.Log("[MonetizationManager] No-Ads subscription active");
+            OnAdsRemoved?.Invoke(true);
+            try { IronSource.Agent.hideBanner(); } catch { }
         }
     }
 
@@ -278,17 +312,24 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     public PurchaseProcessingResult ProcessPurchase(PurchaseEventArgs args)
     {
         var productId = args.purchasedProduct.definition.id;
+
         if (purchaseCallbacks.TryGetValue(productId, out var wrapper))
         {
             wrapper.Callback(true);
             purchaseCallbacks.Remove(productId);
         }
-        
-        if (productId == REMOVE_ADS)
+
+        if (productId == NO_ADS_WEEKLY)
         {
-            HandleRemoveAdsPurchased();
+            UpdateSubscriptionState(args.purchasedProduct);
+            OnAdsRemoved?.Invoke(noAdsSubscriptionActive);
+
+            if (noAdsSubscriptionActive)
+            {
+                try { IronSource.Agent.hideBanner(); } catch { }
+            }
         }
-        
+
         return PurchaseProcessingResult.Complete;
     }
 
@@ -301,10 +342,46 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
             purchaseCallbacks.Remove(product.definition.id);
         }
     }
+    public void RestorePurchases()
+    {
+#if UNITY_IOS
+    if (!iapInitialized)
+    {
+        Debug.LogWarning("[RestorePurchases] IAP not initialized.");
+        return;
+    }
+
+    var apple = storeController.extensions.GetExtension<IAppleExtensions>();
+    Debug.Log("[RestorePurchases] Restoring purchases...");
+    apple.RestoreTransactions(OnRestoreCompleted);
+#else
+        Debug.Log("[RestorePurchases] Restore not supported on this platform.");
+#endif
+    }
+    private void OnRestoreCompleted(bool success, string message)
+    {
+//#if UNITY_IOS
+    Debug.Log($"[RestorePurchases] Completed: {success}, {message}");
+
+    if (success)
+    {
+            var product = storeController.products.WithID(NO_ADS_WEEKLY);
+            UpdateSubscriptionState(product);
+            if (noAdsSubscriptionActive)
+            {
+                Debug.Log("[MonetizationManager] No-Ads subscription active");
+                OnAdsRemoved?.Invoke(true);
+                try { IronSource.Agent.hideBanner(); } catch { }
+            }
+        }
+//#endif
+    }
+
+
 
     private void HandleRemoveAdsPurchased()
     {
-        adsRemoved = true;
+        noAdsSubscriptionActive = true;
         SaveState();
         Debug.Log("Remove Ads purchased — ads disabled.");
         OnAdsRemoved?.Invoke(true);
@@ -313,14 +390,14 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
     private void SaveState()
     {
-        PlayerPrefs.SetInt("MM_AdsRemoved", adsRemoved ? 1 : 0);
+        //PlayerPrefs.SetInt("MM_AdsRemoved", adsRemoved ? 1 : 0);
         PlayerPrefs.SetInt("MM_GamesSinceInterstitial", gamesSinceInterstitial);
         PlayerPrefs.Save();
     }
 
     private void LoadState()
     {
-        adsRemoved = PlayerPrefs.GetInt("MM_AdsRemoved", 0) == 1;
+        //adsRemoved = PlayerPrefs.GetInt("MM_AdsRemoved", 0) == 1;
         gamesSinceInterstitial = PlayerPrefs.GetInt("MM_GamesSinceInterstitial", 0);
     }
 

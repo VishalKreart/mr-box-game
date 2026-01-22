@@ -3,6 +3,9 @@ using System.Collections;
 
 public class BoxSpawner : MonoBehaviour
 {
+
+    //private bool cameraIsMoving = false;
+
     [Header("Box System")]
     public GameObject[] boxPrefabs; // Legacy support
     public BoxVariations boxVariations; // New system
@@ -39,6 +42,22 @@ public class BoxSpawner : MonoBehaviour
             _externalDropControl = value;
         }
     }
+
+
+    //private void OnEnable()
+    //{
+    //    CameraStackFollow.OnCameraMoving += HandleCameraMoving;
+    //}
+
+    //private void OnDisable()
+    //{
+    //    CameraStackFollow.OnCameraMoving -= HandleCameraMoving;
+    //}
+    private void HandleCameraMoving(bool moving)
+    {
+        //cameraIsMoving = moving;
+    }
+
 
     [ContextMenu("Reset Spawner State")]
     public void ResetSpawnerState()
@@ -116,9 +135,12 @@ public class BoxSpawner : MonoBehaviour
 
     void Update()
     {
+        //if (cameraIsMoving)
+        //    return;
+
         if (externalDropControl)
         {
-            Debug.Log($"External drop control is active. Time: {Time.time}");
+            //Debug.Log($"External drop control is active. Time: {Time.time}");
             return;
         }
 
@@ -303,6 +325,9 @@ public class BoxSpawner : MonoBehaviour
 
     IEnumerator SpawnNewBoxCoroutine()
     {
+        //while (cameraIsMoving)
+        //    yield return null;
+
         // Only spawn if not stopped (for Time Attack mode)
         if (stopSpawning) yield break;
     

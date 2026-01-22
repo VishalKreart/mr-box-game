@@ -6,7 +6,7 @@ public class CameraStackFollow : MonoBehaviour
     public Transform boxSpawner; // Assign in inspector
     public BoxSpawner boxSpawnerScript; // Assign in inspector
     public float cameraMoveSpeed = 2f; // Smooth movement speed
-    public float margin = 0.2f; // Extra margin to ensure full box visibility
+    public float margin = 10.2f; // Extra margin to ensure full box visibility
     public int boxesPerStep = 5; // Number of boxes to drop before moving camera/spawner
     public int boxesVisibleAfterStep = 2; // Number of last stacked boxes to keep fully visible after each move
     public float zoomOutDuration = 1f; // Duration of zoom out in seconds
@@ -144,4 +144,4 @@ public class CameraStackFollow : MonoBehaviour
         transform.position = camPos;
         isZoomingOut = false;
     }
-} 
+}

@@ -15,7 +15,7 @@ public class MainMenuManager : MonoBehaviour
     public Button playButton;
     public Button leaderboardButton;
     public Button settingsButton;
-    public Button removeButton;
+    public Button removeAdsButton;
     public Button quitButton;
     public TextMeshProUGUI titleText;
     public TextMeshProUGUI highScoreText;
@@ -23,18 +23,33 @@ public class MainMenuManager : MonoBehaviour
     [Header("Settings Panel")]
     public GameObject settingsPanel;
     public Button closeSettingsButton;
+    public Button rateUsSettingsButton;
+    public Button moreGamesSettingsButton;
+    public Button PrivacyPolicySettingsButton;
+    public Button changeNameSettingsButton;
     public Button resetTutorialButton;
-    public TMP_InputField displayNameInputField;
-    public Button saveDisplayNameButton;
-    
+    public GameObject restorePurchasesButton;
+
+
     [Header("Mode Selection Panel")]
     public GameObject modeSelectPanel;
     public Button classicModeButton;
     public Button timeAttackModeButton;
     public Button backToMenuButton;
-    
-    
-    
+
+    [Header("Exit Game popup")]
+    public GameObject exitPopUp;
+    public Button exitYesButton;
+    public Button exitNoButton;
+    [Header("Rate US popup")]
+    public GameObject rateUsPopUp;
+    public Button rateNowButton;
+    public Button rateLaterButton;
+
+    private const string APP_LAUNCH_COUNT_KEY = "AppLaunchCount";
+    private const string HAS_RATED_KEY = "HasRated";
+
+
     private string originalResetButtonText = "Reset Tutorial";
     
     [Header("First Launch Panel")]
@@ -42,14 +57,74 @@ public class MainMenuManager : MonoBehaviour
     public TMP_InputField firstLaunchNameInput;
     public Button confirmNameButton;
     //public TextMeshProUGUI welcomeText;
-    
+
+    private static bool hasTrackedLaunch = false;
+    // Replace the TrackAppLaunch call in Start() with this:
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void InitializeOnLoad()
+    {
+        if (!hasTrackedLaunch)
+        {
+            // Find the MainMenuManager instance in the scene
+            MainMenuManager instance = FindObjectOfType<MainMenuManager>();
+            if (instance != null)
+            {
+                instance.TrackAppLaunch();
+                hasTrackedLaunch = true;
+            }
+        }
+    }
+
+
     void Start()
     {
+        // TrackAppLaunch();
         SetupButtons();
         UpdateHighScore();
         CheckFirstLaunch();
     }
-    
+
+    private void TrackAppLaunch()
+    {
+        // Increment launch counter
+        int launchCount = PlayerPrefs.GetInt(APP_LAUNCH_COUNT_KEY, 0) + 1;
+        PlayerPrefs.SetInt(APP_LAUNCH_COUNT_KEY, launchCount);
+        PlayerPrefs.Save();
+        // Show rate popup every 3rd launch if not already rated
+        if (launchCount % 3 == 0 && PlayerPrefs.GetInt(HAS_RATED_KEY, 0) == 0)
+        {
+            ShowRateUsPopup();
+        }
+    }
+    private void ShowExitConfirmation()
+    {
+        if (exitPopUp != null)
+        {
+            exitPopUp.SetActive(true);
+        }
+    }
+    private void HideExitConfirmation()
+    {
+        if (exitPopUp != null)
+        {
+            exitPopUp.SetActive(false);
+        }
+    }
+    private void ShowRateUsPopup()
+    {
+        if (rateUsPopUp != null)
+        {
+            rateUsPopUp.SetActive(true);
+        }
+    }
+    private void HideRateUsPopup()
+    {
+        if (rateUsPopUp != null)
+        {
+            rateUsPopUp.SetActive(false);
+        }
+    }
+
     void SetupButtons()
     {
         // Main menu buttons
@@ -60,10 +135,10 @@ public class MainMenuManager : MonoBehaviour
             leaderboardButton.onClick.AddListener(OpenLeaderboard);
 
 
-        if (removeButton != null && MonetizationManager.Instance != null)
+        if (removeAdsButton != null && MonetizationManager.Instance != null)
         {
-            removeButton.gameObject.SetActive(!MonetizationManager.Instance.IsAdsRemoved());
-            removeButton.onClick.AddListener(BuyRemoveAds);
+            removeAdsButton.gameObject.SetActive(!MonetizationManager.Instance.IsAdsRemoved());
+            removeAdsButton.onClick.AddListener(BuyRemoveAds);
             MonetizationManager.OnAdsRemoved += HandleAdsRemoved;
         }
             
@@ -71,8 +146,8 @@ public class MainMenuManager : MonoBehaviour
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OpenSettings);
             
-        if (quitButton != null)
-            quitButton.onClick.AddListener(QuitGame);
+        //if (quitButton != null)
+        //    quitButton.onClick.AddListener(QuitGame);
             
         // Settings panel buttons
         if (closeSettingsButton != null)
@@ -80,7 +155,17 @@ public class MainMenuManager : MonoBehaviour
             
         if (resetTutorialButton != null)
             resetTutorialButton.onClick.AddListener(ResetTutorial);
-            
+
+        if (changeNameSettingsButton != null)
+            changeNameSettingsButton.onClick.AddListener(openChangeNamePopup);
+
+        if (rateUsSettingsButton != null)
+            rateUsSettingsButton.onClick.AddListener(rateUs);
+        if (moreGamesSettingsButton != null)
+            moreGamesSettingsButton.onClick.AddListener(moreGames);
+        if (PrivacyPolicySettingsButton != null)
+            PrivacyPolicySettingsButton.onClick.AddListener(privacyPolicy);
+
         // Mode selection buttons
         if (classicModeButton != null)
             classicModeButton.onClick.AddListener(() => StartGame(GameMode.Classic));
@@ -91,11 +176,45 @@ public class MainMenuManager : MonoBehaviour
         if (backToMenuButton != null)
             backToMenuButton.onClick.AddListener(ShowMainMenu);
             
-        if (saveDisplayNameButton != null)
-            saveDisplayNameButton.onClick.AddListener(SaveDisplayName);
-            
         if (confirmNameButton != null)
             confirmNameButton.onClick.AddListener(SaveFirstLaunchName);
+
+
+        
+        if (quitButton != null)
+        {
+            quitButton.onClick.AddListener(ShowExitConfirmation);
+        }
+        // Add these button setups in the SetupButtons method
+        if (exitYesButton != null)
+            exitYesButton.onClick.AddListener(QuitGame);
+
+        if (exitNoButton != null)
+            exitNoButton.onClick.AddListener(HideExitConfirmation);
+
+        if (rateNowButton != null)
+        {
+            rateNowButton.onClick.AddListener(() => {
+                rateUs(); // Call your existing rateUs function
+                
+            });
+        }
+
+        if (rateLaterButton != null)
+            rateLaterButton.onClick.AddListener(HideRateUsPopup);
+
+#if UNITY_IOS
+        restorePurchasesButton.SetActive(true);
+#else
+        restorePurchasesButton.SetActive(false);
+#endif
+
+
+    }
+
+    public void OnRestorePurchasesClicked()
+    {
+        MonetizationManager.Instance.RestorePurchases();
     }
 
     private void OnDestroy()
@@ -105,7 +224,7 @@ public class MainMenuManager : MonoBehaviour
 
     private void HandleAdsRemoved(bool removed)
     {
-        removeButton.gameObject.SetActive(!removed);
+        removeAdsButton.gameObject.SetActive(!removed);
     }
 
     void UpdateHighScore()
@@ -114,11 +233,34 @@ public class MainMenuManager : MonoBehaviour
         {
             int classicHighScore = PlayerPrefs.GetInt("HighScore_Classic", 0);
             int timeAttackHighScore = PlayerPrefs.GetInt("HighScore_TimeAttack", 0);
+            Debug.Log("Classic: " + classicHighScore + " Time Attack: " + timeAttackHighScore);
             
             highScoreText.text = "Classic: " + classicHighScore + "\nTime Attack: " + timeAttackHighScore;
         }
     }
-    
+
+    private void rateUs()
+    {
+        PlayerPrefs.SetInt(HAS_RATED_KEY, 1);
+        PlayerPrefs.Save();
+        Application.OpenURL("");
+        HideRateUsPopup();
+    }
+    public void moreGames()
+    {
+#if UNITY_ANDROID
+        Application.OpenURL("https://play.google.com/store/apps/developer?id=Watermelon+Lab+IND");
+#endif
+#if UNITY_IOS
+        Application.OpenURL("https://apps.apple.com/us/developer/vishal-sanap/id1041732969");
+#endif
+    }
+    private void privacyPolicy()
+    {
+
+        Application.OpenURL("https://www.watermelonlab.in/privacypolicy.html");
+    }
+
     public void OpenModeSelection()
     {
         if (modeSelectPanel != null)
@@ -177,9 +319,7 @@ public class MainMenuManager : MonoBehaviour
         if (settingsPanel != null)
         {
             settingsPanel.SetActive(true);
-            // Load and show current display name
-            if (displayNameInputField != null)
-                displayNameInputField.text = PlayerPrefs.GetString("PlayerDisplayName", "");
+            
         }
     }
     
@@ -190,7 +330,39 @@ public class MainMenuManager : MonoBehaviour
             settingsPanel.SetActive(false);
         }
     }
-    
+
+    public void openChangeNamePopup()
+    {
+        if (firstLaunchPanel!=null)
+        {
+            firstLaunchPanel.SetActive(true);
+            if (firstLaunchNameInput != null)
+            {
+                firstLaunchNameInput.text = PlayerPrefs.GetString("PlayerDisplayName", "");
+            }
+        }
+    }
+
+    public void socialMediaBtnClick(int i)
+    {
+        switch (i)
+        {
+            case 1://discord
+                Application.OpenURL("https://discord.gg/mB9SfaKebH");
+                break;
+            case 2://yt
+                Application.OpenURL("https://www.youtube.com/@watermelonlabsindia");
+                break;
+            case 3://fb
+                Application.OpenURL("https://www.facebook.com/watermelonlab");
+                break;
+            case 4://telegram
+                Application.OpenURL("https://t.me/+GAJBj92BCG80ZTJl");
+                break;
+        }
+    }
+
+
     public void ResetTutorial()
     {
         PlayerPrefs.SetInt("TutorialComplete", 0);
@@ -225,11 +397,11 @@ public class MainMenuManager : MonoBehaviour
     public void QuitGame()
     {
         Debug.Log("Quitting game...");
-        #if UNITY_EDITOR
+#if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
-        #else
+#else
             Application.Quit();
-        #endif
+#endif
     }
     
     //public void ShowMainMenu()
@@ -240,21 +412,7 @@ public class MainMenuManager : MonoBehaviour
     //        modeSelectPanel.SetActive(false);
     //}
     
-    public void SaveDisplayName()
-    {
-        if (displayNameInputField != null)
-        {
-            string newName = displayNameInputField.text.Trim();
-            if (!string.IsNullOrEmpty(newName))
-            {
-                PlayerPrefs.SetString("PlayerDisplayName", newName);
-                PlayerPrefs.Save();
-                // Update PlayFab display name
-                if (PlayFabManager.Instance != null)
-                    PlayFabManager.Instance.UpdateDisplayName(newName);
-            }
-        }
-    }
+   
     
     public void SaveFirstLaunchName()
     {
@@ -272,6 +430,7 @@ public class MainMenuManager : MonoBehaviour
                 // Hide first launch panel and show main menu
                 if (firstLaunchPanel != null)
                     firstLaunchPanel.SetActive(false);
+                if(!settingsPanel.activeSelf)
                 ShowMainMenu();
             }
         }
