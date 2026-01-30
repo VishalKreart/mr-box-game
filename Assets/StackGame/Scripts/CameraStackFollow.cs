@@ -3,6 +3,7 @@ using System.Collections;
 
 public class CameraStackFollow : MonoBehaviour
 {
+        
     public Transform boxSpawner; // Assign in inspector
     public BoxSpawner boxSpawnerScript; // Assign in inspector
     public float cameraMoveSpeed = 2f; // Smooth movement speed
@@ -61,10 +62,12 @@ public class CameraStackFollow : MonoBehaviour
         }
         if (highestBoxY == float.MinValue) return;
 
+
         // Always place the spawner at a fixed offset below the top of the camera view
         float cameraTopY = targetCameraY + Camera.main.orthographicSize;
         float spawnerOffset = maxBoxHeight / 2f + margin;
         float spawnerY = cameraTopY - spawnerOffset;
+
         boxSpawner.position = new Vector3(0, spawnerY, boxSpawner.position.z);
 
         // Stepwise camera/spawner movement after every boxesPerStep stacked boxes
@@ -76,6 +79,7 @@ public class CameraStackFollow : MonoBehaviour
             // Place the spawner at the top (with margin for full visibility)
             cameraTopY = targetCameraY + Camera.main.orthographicSize;
             spawnerY = cameraTopY - spawnerOffset;
+
             boxSpawner.position = new Vector3(0, spawnerY, boxSpawner.position.z);
             // Reset counter
             stackedCountAtLastMove = stackedCount;
@@ -92,6 +96,9 @@ public class CameraStackFollow : MonoBehaviour
             transform.position = new Vector3(transform.position.x, minCameraY, transform.position.z);
         }
     }
+
+
+    
 
     public void ZoomOutOnGameOver()
     {
@@ -140,6 +147,8 @@ public class CameraStackFollow : MonoBehaviour
             elapsed += Time.unscaledDeltaTime;
             yield return null;
         }
+        
+
         Camera.main.orthographicSize = targetSize;
         transform.position = camPos;
         isZoomingOut = false;

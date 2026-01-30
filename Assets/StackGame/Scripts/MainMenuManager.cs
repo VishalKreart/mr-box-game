@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
 using UnityEngine.UI;
+using Firebase.Analytics;
 
 public enum GameMode
 {
@@ -112,6 +113,7 @@ public class MainMenuManager : MonoBehaviour
     }
     private void ShowRateUsPopup()
     {
+        AnalyticsManager.Instance.LogEvent("rate_popup");
         if (rateUsPopUp != null)
         {
             rateUsPopUp.SetActive(true);
@@ -119,6 +121,7 @@ public class MainMenuManager : MonoBehaviour
     }
     private void HideRateUsPopup()
     {
+        AnalyticsManager.Instance.LogEvent("rate_later");
         if (rateUsPopUp != null)
         {
             rateUsPopUp.SetActive(false);
@@ -241,9 +244,16 @@ public class MainMenuManager : MonoBehaviour
 
     private void rateUs()
     {
+        AnalyticsManager.Instance.LogEvent("rate_now");
         PlayerPrefs.SetInt(HAS_RATED_KEY, 1);
         PlayerPrefs.Save();
-        Application.OpenURL("");
+#if UNITY_ANDROID
+        Application.OpenURL("market://details?id=" + Application.identifier);
+#elif UNITY_IOS
+    Application.OpenURL("itms-apps://itunes.apple.com/app/idYOUR_APP_ID?action=write-review");
+#else
+    Application.OpenURL("https://your-website.com");
+#endif
         HideRateUsPopup();
     }
     public void moreGames()
@@ -306,6 +316,8 @@ public class MainMenuManager : MonoBehaviour
     
     public void StartGame(GameMode mode)
     {
+
+        AnalyticsManager.Instance.LogEvent("game_start",new Parameter("mode", mode ==0 ? "classic":"time_attack"));
         Debug.Log("Starting game in " + mode + " mode...");
         // Store the selected game mode
         PlayerPrefs.SetInt("SelectedGameMode", (int)mode);

@@ -4,7 +4,12 @@ using System.Collections;
 public class BoxSpawner : MonoBehaviour
 {
 
-    //private bool cameraIsMoving = false;
+    [Header("Box Movement")]
+    public float moveSpeed = 3f;          // Speed of horizontal movement
+    public float moveRange = 2f;          // How far left/right the box can move
+    private bool movingRight = true;      // Current movement direction
+    private float baseXPosition;   
+
 
     [Header("Box System")]
     public GameObject[] boxPrefabs; // Legacy support
@@ -31,7 +36,6 @@ public class BoxSpawner : MonoBehaviour
     public GameObject GetCurrentBox() { return currentBox; }
 
 
-
     private bool _externalDropControl;
     public bool externalDropControl
     {
@@ -53,10 +57,10 @@ public class BoxSpawner : MonoBehaviour
     //{
     //    CameraStackFollow.OnCameraMoving -= HandleCameraMoving;
     //}
-    private void HandleCameraMoving(bool moving)
-    {
-        //cameraIsMoving = moving;
-    }
+    //private void HandleCameraMoving(bool moving)
+    //{
+    //    cameraIsMoving = moving;
+    //}
 
 
     [ContextMenu("Reset Spawner State")]
@@ -99,8 +103,12 @@ public class BoxSpawner : MonoBehaviour
 
     void Start()
     {
+
         if (ScoreManager.Instance != null) ScoreManager.Instance.ResetScore();
+        
         StartCoroutine(SpawnNewBoxCoroutine());
+
+        baseXPosition = transform.position.x;
     }
 
     [Header("Safe Area")]
@@ -133,10 +141,34 @@ public class BoxSpawner : MonoBehaviour
     // Add this field at the class level
     private float lastDropTime;
 
+    private void MoveBoxHorizontally()
+    {
+        if (currentBox == null) return;
+        
+        var boxState = currentBox.GetComponent<BoxState>();
+        if (boxState == null || boxState.state != BoxState.State.Spawned) return;
+        
+        // Calculate target position
+        float currentX = currentBox.transform.position.x;
+        float targetX = movingRight ? baseXPosition + moveRange : baseXPosition - moveRange;
+        
+        // Move towards target
+        float newX = Mathf.MoveTowards(currentX, targetX, moveSpeed * Time.deltaTime);
+        currentBox.transform.position = new Vector3(newX, 
+                                                currentBox.transform.position.y, 
+                                                currentBox.transform.position.z);
+        
+        // Change direction if we've reached the target
+        if (Mathf.Abs(newX - targetX) < 0.01f)
+        {
+            movingRight = !movingRight;
+        }
+    }
     void Update()
     {
         //if (cameraIsMoving)
         //    return;
+        
 
         if (externalDropControl)
         {
@@ -159,12 +191,12 @@ public class BoxSpawner : MonoBehaviour
         if (!canDrop)
         {
             // Add detailed debug info
-            var boxState1 = currentBox?.GetComponent<BoxState>();
-            Debug.Log($"Cannot drop box. " +
-                     $"canDrop: {canDrop}, " +
-                     $"isSpawning: {isSpawning}, " +
-                     $"Box State: {boxState1?.state}, " +
-                     $"Time: {Time.time}");
+            //var boxState1 = currentBox?.GetComponent<BoxState>();
+            //Debug.Log($"Cannot drop box. " +
+            //         $"canDrop: {canDrop}, " +
+            //         $"isSpawning: {isSpawning}, " +
+            //         $"Box State: {boxState1?.state}, " +
+            //         $"Time: {Time.time}");
             return;
         }
 
@@ -219,6 +251,7 @@ public class BoxSpawner : MonoBehaviour
             Debug.Log($"Box is in Spawned state - Draggable: {drag != null}, State: {boxState.state}");
             return;
         }
+        MoveBoxHorizontally();
 
         bool inputDetected = false;
 #if UNITY_EDITOR
@@ -268,7 +301,7 @@ public class BoxSpawner : MonoBehaviour
         }
         else
         {
-            Debug.Log("No valid input detected");
+            //Debug.Log("No valid input detected");
         }
     }
 
@@ -333,6 +366,10 @@ public class BoxSpawner : MonoBehaviour
     
         isSpawning = true;
         
+        // Reset spawner position to center when spawning a new box
+        // transform.position = new Vector3(0, transform.position.y, transform.position.z);
+        // movingRight = true; // Reset direction
+
         // Choose which box to spawn
         GameObject boxToSpawn = GetNextBox();
         

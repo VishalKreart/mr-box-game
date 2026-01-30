@@ -10,7 +10,8 @@ public class TimeAttackManager : MonoBehaviour
     public float timeLimit = 25f; // Even shorter - 25 seconds base time
     public float currentTime;
     public bool isTimeAttackMode = false;
-    
+    public TextMeshProUGUI newHighScoreText;
+
     [Header("Time Limit Options")]
     public float easyTimeLimit = 20f;    // Easy mode: 20 seconds
     public float normalTimeLimit = 25f;  // Normal mode: 25 seconds  
@@ -32,6 +33,8 @@ public class TimeAttackManager : MonoBehaviour
     private BoxSpawner boxSpawner;
     private GameManager gameManager;
     private bool gameEnded = false;
+
+
     
     void Start()
     {
@@ -194,7 +197,7 @@ public class TimeAttackManager : MonoBehaviour
             TextMeshProUGUI gameOverText = gameOverPanel.GetComponentInChildren<TextMeshProUGUI>();
             if (gameOverText != null)
             {
-                gameOverText.text = "Time Attack Complete!";
+                gameOverText.text = "You Survived!";
                 gameOverText.color = Color.green;
             }
         }
@@ -223,6 +226,7 @@ public class TimeAttackManager : MonoBehaviour
             PlayerPrefs.SetInt("HighScore_TimeAttack", score);
             PlayerPrefs.Save();
             Debug.Log("New Time Attack High Score: " + score);
+            newHighScoreText.gameObject.SetActive(true);
 
             if (PlayFabManager.Instance != null)
             {
@@ -281,8 +285,8 @@ public class TimeAttackManager : MonoBehaviour
             TextMeshProUGUI gameOverText = gameOverPanel.GetComponentInChildren<TextMeshProUGUI>();
             if (gameOverText != null)
             {
-                gameOverText.text = "FAILED!\nTower Fell";
-                gameOverText.color = Color.red;
+                gameOverText.text = "Tower Fell";
+                gameOverText.color = Color.yellow;
             }
             
         }
@@ -296,7 +300,7 @@ public class TimeAttackManager : MonoBehaviour
         // Hide the separate failed text (we're using the game over panel instead)
         if (failedText != null)
         {
-            failedText.gameObject.SetActive(false);
+            failedText.gameObject.SetActive(true);
         }
         
         // Zoom out camera if available
@@ -393,7 +397,9 @@ public class TimeAttackManager : MonoBehaviour
                 gameOverText.color = Color.white;
             }
         }
-        
+
+        failedText.gameObject.SetActive(false);
+
         // Restore ScoreManager's game over score text
         if (ScoreManager.Instance != null && ScoreManager.Instance.gameOverScoreText != null)
         {

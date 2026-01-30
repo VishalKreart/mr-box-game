@@ -11,7 +11,7 @@ public class PlayFabLeaderboardUI : MonoBehaviour
     public GameObject leaderboardPanel;
     public Transform contentParent;
     public GameObject entryPrefab;
-    public TextMeshProUGUI titleText;
+    //public TextMeshProUGUI titleText;
     public Button classicButton;
     public Button timeAttackButton;
     public Button closeButton;
@@ -70,7 +70,7 @@ public class PlayFabLeaderboardUI : MonoBehaviour
             
         // Update UI
         UpdateButtonHighlights();
-        UpdateTitleText();
+        //UpdateTitleText();
         
         // Load leaderboard data
         RefreshLeaderboard();
@@ -95,7 +95,7 @@ public class PlayFabLeaderboardUI : MonoBehaviour
         
         // Update UI
         UpdateButtonHighlights();
-        UpdateTitleText();
+        //UpdateTitleText();
         
         // Refresh leaderboard data
         RefreshLeaderboard();
@@ -120,7 +120,7 @@ public class PlayFabLeaderboardUI : MonoBehaviour
         if (statusText != null)
         {
             statusText.text = "Loading...";
-            statusText.gameObject.SetActive(true);
+            //statusText.gameObject.SetActive(true);
         }
         
         // Clear existing entries
@@ -347,12 +347,12 @@ public class PlayFabLeaderboardUI : MonoBehaviour
         timeAttackButton.interactable = currentMode != GameMode.TimeAttack;
     }
     
-    private void UpdateTitleText()
-    {
-        if (titleText != null)
-        {
-            titleText.text = currentMode == GameMode.Classic ? 
-                "Classic Mode Leaderboard" : "Time Attack Leaderboard";
-        }
-    }
+    //private void UpdateTitleText()
+    //{
+    //    if (titleText != null)
+    //    {
+    //        titleText.text = currentMode == GameMode.Classic ? 
+    //            "Classic Mode Leaderboard" : "Time Attack Leaderboard";
+    //    }
+    //}
 }

@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:keep="@string/gcm_defaultSenderId,@string/google_storage_bucket,@string/project_id,@string/google_api_key,@string/google_crash_reporting_api_key,@string/google_app_id">
+  <string name="gcm_defaultSenderId" translatable="false">1060568637834</string>
+  <string name="google_storage_bucket" translatable="false">wobbly-tower-a7505.firebasestorage.app</string>
+  <string name="project_id" translatable="false">wobbly-tower-a7505</string>
+  <string name="google_api_key" translatable="false">AIzaSyCZkw29k9nZ_E9lror9Xgtci345EdBRNes</string>
+  <string name="google_crash_reporting_api_key" translatable="false">AIzaSyCZkw29k9nZ_E9lror9Xgtci345EdBRNes</string>
+  <string name="google_app_id" translatable="false">1:1060568637834:android:4ebe42efddd39069aae873</string>
+</resources>

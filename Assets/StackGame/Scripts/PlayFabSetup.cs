@@ -59,7 +59,7 @@ public class PlayFabSetup : MonoBehaviour
                 leaderboardUI.leaderboardPanel = leaderboardPanel;
                 leaderboardUI.contentParent = contentParent;
                 leaderboardUI.entryPrefab = entryPrefab;
-                leaderboardUI.titleText = titleText;
+                //leaderboardUI.titleText = titleText;
                 leaderboardUI.classicButton = classicButton;
                 leaderboardUI.timeAttackButton = timeAttackButton;
                 leaderboardUI.closeButton = closeButton;

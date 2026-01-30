@@ -1,7 +1,12 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+
+using Firebase.Analytics;
+using Unity.Services.LevelPlay;
 using UnityEngine;
 using UnityEngine.Purchasing;
+
 
 [System.Serializable]
 public class PurchaseCallbackWrapper
@@ -12,14 +17,14 @@ public class PurchaseCallbackWrapper
 
 public class MonetizationManager : MonoBehaviour, IStoreListener
 {
+    
     public static MonetizationManager Instance;
 
-    [Header("IronSource App Keys")]
-    [SerializeField] private string androidAppKey = "YOUR_ANDROID_APP_KEY";
-    [SerializeField] private string iosAppKey = "YOUR_IOS_APP_KEY";
+    private LevelPlayInterstitialAd interstitialAd;
+    private LevelPlayRewardedAd rewardedVideoAd;
 
     [Header("Ads")]
-    [SerializeField] private int interstitialEveryXGames = 3;
+    [SerializeField] private int interstitialEveryXGames = 4;
 
     // IAP
     private const string NO_ADS_WEEKLY = "no_ads_weekly"; // Subscription
@@ -50,45 +55,69 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         InitializeAds();
         InitializeIAP();
     }
+    private void OnDestroy()
+    {
+        LevelPlay.OnInitSuccess -= OnLevelPlayInitSuccess;
+        LevelPlay.OnInitFailed -= OnLevelPlayInitFailed;
+    }
 
     // ---------------- IronSource ----------------
     private void InitializeAds()
     {
-#if UNITY_ANDROID
-        string appKey = androidAppKey;
-#elif UNITY_IOS
-        string appKey = iosAppKey;
-#else
-        string appKey = "";
-#endif
-        if (string.IsNullOrEmpty(appKey))
+
+        if (string.IsNullOrEmpty(AdConfig.AppKey))
         {
             Debug.LogWarning("[MonetizationManager] IronSource app key not set for this platform.");
             return;
         }
-        //IronSource.Agent.setMetaData("is_test_suite", "enable");
 
-        IronSource.Agent.init(appKey);
-        IronSource.Agent.validateIntegration();
-        
+        Debug.Log("LevelPlay IntializeAds");
 
-        // Subscribe to init complete callback
-        IronSourceEvents.onSdkInitializationCompletedEvent += OnIronSourceInitComplete;
+       
+        Debug.Log("[LevelPlaySample] LevelPlay.ValidateIntegration");
+        LevelPlay.ValidateIntegration();
 
-        // Preload interstitials
-        //IronSource.Agent.loadInterstitial();
+        Debug.Log("[LevelPlaySample] Register initialization callbacks");
+        LevelPlay.OnInitSuccess += OnLevelPlayInitSuccess;
+        LevelPlay.OnInitFailed += OnLevelPlayInitFailed;
+
+        //LevelPlay.SetMetaData("is_test_suite", "enable");
+
+        LevelPlay.Init(AdConfig.AppKey);
 
     }
 
-
-    private void OnIronSourceInitComplete()
+    void EnableAds()
     {
-        Debug.Log("[MonetizationManager] IronSource initialization completed successfully.");
-        //IronSource.Agent.launchTestSuite();
-        // Preload interstitials after init
-        IronSource.Agent.loadInterstitial();
-        IronSource.Agent.loadRewardedVideo();
+        // Register to ImpressionDataReadyEvent
+        LevelPlay.OnImpressionDataReady += ImpressionDataReadyEvent;
+
+        // Create Interstitial object
+        interstitialAd = new LevelPlayInterstitialAd(AdConfig.InterstitalAdUnitId);
+        interstitialAd.LoadAd();
+
+        // Register to Interstitial events
+        interstitialAd.OnAdLoaded += InterstitialOnAdLoadedEvent;
+        interstitialAd.OnAdLoadFailed += InterstitialOnAdLoadFailedEvent;
+        interstitialAd.OnAdDisplayed += InterstitialOnAdDisplayedEvent;
+        interstitialAd.OnAdDisplayFailed += InterstitialOnAdDisplayFailedEvent;
+        interstitialAd.OnAdClicked += InterstitialOnAdClickedEvent;
+        interstitialAd.OnAdClosed += InterstitialOnAdClosedEvent;
+        interstitialAd.OnAdInfoChanged += InterstitialOnAdInfoChangedEvent;
     }
+    private void OnLevelPlayInitSuccess(LevelPlayConfiguration config)
+    {
+        Debug.Log("[MonetizationManager] LevelPlay initialized successfully"+ config.ToString());
+        //LevelPlay.LaunchTestSuite();
+        EnableAds();
+    }
+    private void OnLevelPlayInitFailed(LevelPlayInitError error)
+    {
+        Debug.LogError($"[MonetizationManager] LevelPlay init failed: {error.ErrorMessage}");
+    }
+
+
+  
     // ---------------- Rewarded ----------------
     private Action rewardedCallback;
 
@@ -102,34 +131,34 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     /// </summary>
     public void ShowRewardedAd(Action onRewardGranted)
     {
-        if (IronSource.Agent.isRewardedVideoAvailable())
-        {
-            rewardedCallback = onRewardGranted;
+        //if (IronSource.Agent.isRewardedVideoAvailable())
+        //{
+        //    rewardedCallback = onRewardGranted;
 
-            // Subscribe once with the correct LevelPlay signature
-            void OnRewarded(IronSourcePlacement placement, IronSourceAdInfo adInfo)
-            {
-                try
-                {
-                    rewardedCallback?.Invoke();          // resume gameplay, etc.
-                    OnContinueUsed?.Invoke();            // legacy event fire (if anyone listens)
-                }
-                finally
-                {
-                    rewardedCallback = null;
-                    IronSourceRewardedVideoEvents.onAdRewardedEvent -= OnRewarded;
-                }
-            }
+        //    // Subscribe once with the correct LevelPlay signature
+        //    void OnRewarded(IronSourcePlacement placement, IronSourceAdInfo adInfo)
+        //    {
+        //        try
+        //        {
+        //            rewardedCallback?.Invoke();          // resume gameplay, etc.
+        //            OnContinueUsed?.Invoke();            // legacy event fire (if anyone listens)
+        //        }
+        //        finally
+        //        {
+        //            rewardedCallback = null;
+        //            IronSourceRewardedVideoEvents.onAdRewardedEvent -= OnRewarded;
+        //        }
+        //    }
 
-            IronSourceRewardedVideoEvents.onAdRewardedEvent += OnRewarded;
-            IronSource.Agent.showRewardedVideo();
-        }
-        else
-        {
-            Debug.Log("[MonetizationManager] No rewarded ad available.");
-            rewardedCallback = null;
-            OnNoRewardedAdAvailable?.Invoke(); // let UI decide (usually close & GameOver)
-        }
+        //    IronSourceRewardedVideoEvents.onAdRewardedEvent += OnRewarded;
+        //    IronSource.Agent.showRewardedVideo();
+        //}
+        //else
+        //{
+        //    Debug.Log("[MonetizationManager] No rewarded ad available.");
+        //    rewardedCallback = null;
+        //    OnNoRewardedAdAvailable?.Invoke(); // let UI decide (usually close & GameOver)
+        //}
     }
 
     /// <summary>
@@ -137,7 +166,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     /// </summary>
     public bool CanContinue()
     {
-        return IronSource.Agent.isRewardedVideoAvailable();
+        return true;// IronSource.Agent.isRewardedVideoAvailable();
     }
 
     /// <summary>
@@ -186,22 +215,87 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         gamesSinceInterstitial++;
         if (gamesSinceInterstitial >= Mathf.Max(1, interstitialEveryXGames))
         {
-            if (IronSource.Agent.isInterstitialReady())
+
+            if (interstitialAd.IsAdReady())
             {
-                Debug.Log("Interstitial Ad show");
-                IronSource.Agent.showInterstitial();
+                Debug.Log("[LevelPlaySample] Showing Interstitial Ad");
+                AnalyticsManager.Instance.LogEvent("interstitial_shown");
+                interstitialAd.ShowAd();
                 gamesSinceInterstitial = 0;
-                IronSource.Agent.loadInterstitial(); // prepare next
+
             }
             else
             {
-                Debug.Log("Interstitial Ad not ready");
-                IronSource.Agent.loadInterstitial();
+                Debug.Log("[LevelPlaySample] LevelPlay Interstital Ad is not ready");
+                interstitialAd.LoadAd();
             }
+            //if (IronSource.Agent.isInterstitialReady())
+            //{
+            //    AnalyticsManager.Instance.LogEvent("interstitial_shown");
+
+            //    Debug.Log("Interstitial Ad show");
+            //    IronSource.Agent.showInterstitial();
+            //    gamesSinceInterstitial = 0;
+            //    IronSource.Agent.loadInterstitial(); // prepare next
+            //}
+            //else
+            //{
+            //    Debug.Log("Interstitial Ad not ready");
+            //    IronSource.Agent.loadInterstitial();
+            //}
         }
         Debug.Log("Interstitial Ad end");
         SaveState();
     }
+
+
+    void InterstitialOnAdLoadedEvent(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdLoadedEvent With AdInfo: {adInfo}");
+    }
+
+    void InterstitialOnAdLoadFailedEvent(LevelPlayAdError error)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdLoadFailedEvent With Error: {error}");
+    }
+
+    void InterstitialOnAdDisplayedEvent(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdDisplayedEvent With AdInfo: {adInfo}");
+    }
+
+    void InterstitialOnAdDisplayFailedEvent(LevelPlayAdInfo adInfo, LevelPlayAdError error)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdDisplayFailedEvent With AdInfo: {adInfo} and Error: {error}");
+    }
+
+    void InterstitialOnAdClickedEvent(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdClickedEvent With AdInfo: {adInfo}");
+    }
+
+    void InterstitialOnAdClosedEvent(LevelPlayAdInfo adInfo)
+    {
+        interstitialAd.LoadAd();
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdClosedEvent With AdInfo: {adInfo}");
+    }
+
+    void InterstitialOnAdInfoChangedEvent(LevelPlayAdInfo adInfo)
+    {
+        Debug.Log($"[LevelPlaySample] Received InterstitialOnAdInfoChangedEvent With AdInfo: {adInfo}");
+    }
+
+    void ImpressionDataReadyEvent(LevelPlayImpressionData impressionData)
+    {
+        Debug.Log($"[LevelPlaySample] Received ImpressionDataReadyEvent ToString(): {impressionData}");
+        Debug.Log($"[LevelPlaySample] Received ImpressionDataReadyEvent allData: {impressionData.AllData}");
+    }
+
+    private void OnDisable()
+    {
+        interstitialAd?.DestroyAd();
+    }
+
 
     // ---------------- IAP (Remove Ads only) ----------------
     private void InitializeIAP()
@@ -233,25 +327,71 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
     public bool IsAdsRemoved() => noAdsSubscriptionActive;
 
+//    private void UpdateSubscriptionState(Product product)
+//    {
+//        if (product == null || !product.hasReceipt)
+//        {
+//            noAdsSubscriptionActive = false;
+//            return;
+//        }
+
+//#if UNITY_ANDROID || UNITY_IOS
+//    var subscriptionManager = new SubscriptionManager(product, null);
+//    var info = subscriptionManager.getSubscriptionInfo();
+
+//    noAdsSubscriptionActive =
+//        info.isSubscribed() == Result.True &&
+//        info.isExpired() == Result.False;
+//#else
+//        noAdsSubscriptionActive = false;
+//#endif
+//    }
+
     private void UpdateSubscriptionState(Product product)
     {
-        if (product == null || !product.hasReceipt)
+#if UNITY_ANDROID || UNITY_IOS
+        if (product == null || string.IsNullOrEmpty(product.receipt))
         {
             noAdsSubscriptionActive = false;
             return;
         }
 
-#if UNITY_ANDROID || UNITY_IOS
-    var subscriptionManager = new SubscriptionManager(product, null);
-    var info = subscriptionManager.getSubscriptionInfo();
+        try
+        {
+            var subscriptionManager = new SubscriptionManager(product, null);
+            var info = subscriptionManager.getSubscriptionInfo();
 
-    noAdsSubscriptionActive =
-        info.isSubscribed() == Result.True &&
-        info.isExpired() == Result.False;
+            bool subscribed = info.isSubscribed() == Result.True;
+            bool expired = info.isExpired() == Result.True;
+
+            Debug.Log($"[IAP] Subscribed={subscribed}, Expired={expired}, ExpireDate={info.getExpireDate()}");
+
+            noAdsSubscriptionActive = subscribed && !expired;
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[IAP] Subscription check failed: {e}");
+            noAdsSubscriptionActive = false;
+        }
 #else
-        noAdsSubscriptionActive = false;
+    noAdsSubscriptionActive = false;
 #endif
     }
+    private IEnumerator RefreshSubscriptionStateDelayed()
+    {
+        yield return new WaitForSeconds(1f); // allow receipt sync
+
+        var product = storeController.products.WithID(NO_ADS_WEEKLY);
+        UpdateSubscriptionState(product);
+
+        if (noAdsSubscriptionActive)
+        {
+            Debug.Log("[MonetizationManager] No-Ads subscription active (delayed)");
+            OnAdsRemoved?.Invoke(true);
+
+        }
+    }
+
 
 
     public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
@@ -259,16 +399,27 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         storeController = controller;
         iapInitialized = true;
 
-        var product = controller.products.WithID(NO_ADS_WEEKLY);
-        UpdateSubscriptionState(product);
 
-        if (noAdsSubscriptionActive)
-        {
-            Debug.Log("[MonetizationManager] No-Ads subscription active");
-            OnAdsRemoved?.Invoke(true);
-            try { IronSource.Agent.hideBanner(); } catch { }
-        }
+        // Delay subscription check (important!)
+        StartCoroutine(RefreshSubscriptionStateDelayed());
+
+        //var product = controller.products.WithID(NO_ADS_WEEKLY);
+        //UpdateSubscriptionState(product);
+
+        //if (noAdsSubscriptionActive)
+        //{
+        //    Debug.Log("[MonetizationManager] No-Ads subscription active");
+        //    OnAdsRemoved?.Invoke(true);
+        //    try {
+        //        //IronSource.Agent.hideBanner();
+        //    } catch {
+
+        //    }
+        //}
     }
+
+    
+
 
     // Unity IAP requires BOTH overloads for compatibility
     public void OnInitializeFailed(InitializationFailureReason error)
@@ -321,12 +472,19 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
         if (productId == NO_ADS_WEEKLY)
         {
+
+            AnalyticsManager.Instance.LogEvent(FirebaseAnalytics.EventPurchase,
+                new Parameter(FirebaseAnalytics.ParameterItemID, productId)
+            );
+
             UpdateSubscriptionState(args.purchasedProduct);
             OnAdsRemoved?.Invoke(noAdsSubscriptionActive);
 
             if (noAdsSubscriptionActive)
             {
-                try { IronSource.Agent.hideBanner(); } catch { }
+                try {
+                    //IronSource.Agent.hideBanner();
+                    } catch { }
             }
         }
 
@@ -336,6 +494,10 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     public void OnPurchaseFailed(Product product, PurchaseFailureReason reason)
     {
         Debug.LogError($"[MonetizationManager] IAP Purchase Failed: {product?.definition?.id} - {reason}");
+        AnalyticsManager.Instance.LogEvent("iap_failed",
+                        new Parameter("product_id", product?.definition?.id),
+                        new Parameter("reason", reason.ToString())
+                    );
         if (product != null && purchaseCallbacks.TryGetValue(product.definition.id, out var wrapper))
         {
             wrapper.Callback(false);
@@ -371,7 +533,9 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
             {
                 Debug.Log("[MonetizationManager] No-Ads subscription active");
                 OnAdsRemoved?.Invoke(true);
-                try { IronSource.Agent.hideBanner(); } catch { }
+                try {
+                    //IronSource.Agent.hideBanner();
+                    } catch { }
             }
         }
 //#endif
@@ -385,7 +549,9 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         SaveState();
         Debug.Log("Remove Ads purchased — ads disabled.");
         OnAdsRemoved?.Invoke(true);
-        try { IronSource.Agent.hideBanner(); } catch { }
+        try {
+            //IronSource.Agent.hideBanner();
+            } catch { }
     }
 
     private void SaveState()

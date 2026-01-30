@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
+using Firebase.Analytics;
+using System.Collections;
 
 [System.Serializable]
 public class LeaderboardEntry
@@ -37,6 +40,7 @@ public class GameManager : MonoBehaviour
     public GameObject gameOverPanel;
     public CameraStackFollow cameraStackFollow; // Assign in inspector
     public BackgroundColorManager backgroundColorManager; // Assign in inspector
+    public TextMeshProUGUI newHighScoreText;
 
     [Header("Refs")]
     [SerializeField] public ContinueUIManager continueUI;
@@ -54,7 +58,7 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("Game Over!");
 
-
+       
         // Stop background color changes
         if (backgroundColorManager != null)
         {
@@ -65,11 +69,20 @@ public class GameManager : MonoBehaviour
         TimeAttackManager timeAttackManager = FindObjectOfType<TimeAttackManager>();
         if (timeAttackManager != null && timeAttackManager.IsTimeAttackMode())
         {
+            AnalyticsManager.Instance.LogEvent("game_over",
+               new Parameter("mode", "time_attack"),
+               new Parameter("score", ScoreManager.Instance.GetScore())
+                );
             // Let TimeAttackManager handle the game over for Time Attack mode
             timeAttackManager.OnTowerFell();
         }
         else
         {
+            AnalyticsManager.Instance.LogEvent("game_over",
+               new Parameter("mode", "classic"),
+               new Parameter("score", ScoreManager.Instance.GetScore())
+                );
+
             // Normal game over for Classic mode
             Time.timeScale = 0f; // Pause the game
             gameOverPanel.SetActive(true);
@@ -80,13 +93,24 @@ public class GameManager : MonoBehaviour
             }
             if (cameraStackFollow != null) cameraStackFollow.ZoomOutOnGameOver();
         }
+
         // Show interstitial every 3rd game over (if ads not removed)
+        MonetizationManager.Instance.OnGameOver();
+        // Start the coroutine to execute after 2 seconds
+        //StartCoroutine(ExecuteAfterDelay(2.0f));
+    }
+    // The coroutine itself
+    private IEnumerator ExecuteAfterDelay(float delayTime)
+    {
+        yield return new WaitForSeconds(delayTime); // Wait for the specified time
         MonetizationManager.Instance.OnGameOver();
     }
 
     public void RestartGame()
     {
         Time.timeScale = 1f;
+
+
 
         // Start fresh background color
         if (backgroundColorManager != null)
@@ -100,6 +124,7 @@ public class GameManager : MonoBehaviour
         {
             timeAttackManager.ResetGameOverText();
         }
+        gameOverPanel.SetActive(false);
 
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
@@ -133,11 +158,12 @@ public class GameManager : MonoBehaviour
 
             int highScore = PlayerPrefs.GetInt(highScoreKey, 0);
 
+            Debug.Log(highScore + " : Score : " + currentScore);
             if (currentScore > highScore)
             {
                 PlayerPrefs.SetInt(highScoreKey, currentScore);
                 PlayerPrefs.Save();
-                Debug.Log("New " + gameMode + " High Score: " + currentScore);
+                newHighScoreText.gameObject.SetActive(true);
                 // Submit score to PlayFab online leaderboard
                 if (PlayFabManager.Instance != null)
                 {
@@ -166,7 +192,10 @@ public class GameManager : MonoBehaviour
     {
         // You can add visual/audio feedback here
         Debug.Log("🎉 NEW HIGH SCORE! 🎉");
-
+        if (ScoreManager.Instance != null)
+        {
+            newHighScoreText.gameObject.SetActive(true);
+        }
         // Optional: Show a popup or animation
         // You can add UI elements for this later
     }
