@@ -17,7 +17,7 @@ public class PurchaseCallbackWrapper
 
 public class MonetizationManager : MonoBehaviour, IStoreListener
 {
-    
+    public string CachedPrice { get; private set; }
     public static MonetizationManager Instance;
 
     private LevelPlayInterstitialAd interstitialAd;
@@ -26,12 +26,25 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     [Header("Ads")]
     [SerializeField] private int interstitialEveryXGames = 4;
 
+    public static event Action<string> OnPriceUpdated;
+
     // IAP
+#if UNITY_ANDROID
     private const string NO_ADS_WEEKLY = "no_ads_weekly"; // Subscription
+#endif
+#if UNITY_IOS
+    private const string NO_ADS_WEEKLY = "no_ads_weekly_wobbly"; // Subscription
+#endif
+
 
     private const string SAVE_TOWER = "save_tower"; // Consumable
-    private IStoreController storeController;
+    private static IStoreController storeController;
+    private static IExtensionProvider extensionProvider;
     private bool iapInitialized;
+#if UNITY_IOS
+    private bool isRefreshingReceipt = false;
+#endif
+
     private Dictionary<string, PurchaseCallbackWrapper> purchaseCallbacks = new Dictionary<string, PurchaseCallbackWrapper>();
 
     // State
@@ -73,7 +86,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
 
         Debug.Log("LevelPlay IntializeAds");
 
-       
+
         Debug.Log("[LevelPlaySample] LevelPlay.ValidateIntegration");
         LevelPlay.ValidateIntegration();
 
@@ -107,7 +120,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     }
     private void OnLevelPlayInitSuccess(LevelPlayConfiguration config)
     {
-        Debug.Log("[MonetizationManager] LevelPlay initialized successfully"+ config.ToString());
+        Debug.Log("[MonetizationManager] LevelPlay initialized successfully" + config.ToString());
         //LevelPlay.LaunchTestSuite();
         EnableAds();
     }
@@ -117,7 +130,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     }
 
 
-  
+
     // ---------------- Rewarded ----------------
     private Action rewardedCallback;
 
@@ -182,10 +195,11 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     /// </summary>
     public void ShowSaveTowerAd(System.Action onTowerSaved)
     {
-        ShowRewardedAd(() => {
+        ShowRewardedAd(() =>
+        {
             Debug.Log("[MonetizationManager] Tower save ad completed successfully!");
             onTowerSaved?.Invoke();
-            
+
             // Apply tower rebalancing effect
             TowerRebalancer rebalancer = FindObjectOfType<TowerRebalancer>();
             if (rebalancer != null)
@@ -300,6 +314,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
     // ---------------- IAP (Remove Ads only) ----------------
     private void InitializeIAP()
     {
+        Debug.Log("IAP InitializeIAP");
         var builder = ConfigurationBuilder.Instance(StandardPurchasingModule.Instance());
         builder.AddProduct(NO_ADS_WEEKLY, ProductType.Subscription);
         UnityPurchasing.Initialize(this, builder);
@@ -313,7 +328,7 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         }
         else
         {
-            Debug.LogError("[MonetizationManager] IAP not initialized.");
+            Debug.Log("[MonetizationManager] IAP not initialized. in PurchaseRemoveAds");
         }
     }
     public void PurchaseNoAdsWeekly()
@@ -322,114 +337,211 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         {
             storeController.InitiatePurchase(NO_ADS_WEEKLY);
         }
+        else
+        {
+            Debug.Log("[MonetizationManager] IAP not initialized. in PurchaseNoAdsWeekly");
+        }
     }
 
 
     public bool IsAdsRemoved() => noAdsSubscriptionActive;
 
-//    private void UpdateSubscriptionState(Product product)
-//    {
-//        if (product == null || !product.hasReceipt)
-//        {
-//            noAdsSubscriptionActive = false;
-//            return;
-//        }
+    //    private void UpdateSubscriptionState(Product product)
+    //    {
+    //        if (product == null || !product.hasReceipt)
+    //        {
+    //            noAdsSubscriptionActive = false;
+    //            return;
+    //        }
 
-//#if UNITY_ANDROID || UNITY_IOS
-//    var subscriptionManager = new SubscriptionManager(product, null);
-//    var info = subscriptionManager.getSubscriptionInfo();
+    //#if UNITY_ANDROID || UNITY_IOS
+    //    var subscriptionManager = new SubscriptionManager(product, null);
+    //    var info = subscriptionManager.getSubscriptionInfo();
 
-//    noAdsSubscriptionActive =
-//        info.isSubscribed() == Result.True &&
-//        info.isExpired() == Result.False;
-//#else
-//        noAdsSubscriptionActive = false;
-//#endif
-//    }
+    //    noAdsSubscriptionActive =
+    //        info.isSubscribed() == Result.True &&
+    //        info.isExpired() == Result.False;
+    //#else
+    //        noAdsSubscriptionActive = false;
+    //#endif
+    //    }
 
-    private void UpdateSubscriptionState(Product product)
+
+    private bool UpdateSubscriptionState()
     {
-#if UNITY_ANDROID || UNITY_IOS
-        if (product == null || string.IsNullOrEmpty(product.receipt))
+        if (storeController == null)
         {
-            noAdsSubscriptionActive = false;
-            return;
+            Debug.Log("StoreController not initialized yet");
+            return false;
         }
-
-        try
+        Debug.Log("IAP UpdateSubscriptionState");
+        foreach (var product in storeController.products.all)
         {
-            var subscriptionManager = new SubscriptionManager(product, null);
-            var info = subscriptionManager.getSubscriptionInfo();
+            if (product.definition.type != ProductType.Subscription)
+                continue;
 
-            bool subscribed = info.isSubscribed() == Result.True;
-            bool expired = info.isExpired() == Result.True;
+            // No receipt = no subscription
+            if (!product.hasReceipt)
+                continue;
 
-            Debug.Log($"[IAP] Subscribed={subscribed}, Expired={expired}, ExpireDate={info.getExpireDate()}");
-
-            noAdsSubscriptionActive = subscribed && !expired;
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"[IAP] Subscription check failed: {e}");
-            noAdsSubscriptionActive = false;
-        }
+#if UNITY_IOS
+         try
+            {
+                var subManager = new SubscriptionManager(product, null);
+                var info = subManager.getSubscriptionInfo();
+                Debug.Log(subManager + " UpdateSubscriptionState " + info);
+                if (info != null && info.isSubscribed() == UnityEngine.Purchasing.Result.True)
+                {
+                    // 🔍 ADD THESE LOGS HERE
+                    Debug.Log($"[IAP] ProductId: {product.definition.id}");
+                    Debug.Log($"[IAP] Subscribed: {info.isSubscribed()}");
+                    Debug.Log($"[IAP] Expired: {info.isExpired()}");
+                    Debug.Log($"[IAP] AutoRenewing: {info.isAutoRenewing()}");
+                    Debug.Log($"[IAP] ExpireDate: {info.getExpireDate()}");
+                    return true;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("Subscription check error: " + e.Message);
+            }
 #else
-    noAdsSubscriptionActive = false;
+            // Android fallback (basic receipt presence)
+            if (product.hasReceipt)
+            {
+                return true;
+            }
 #endif
+        }
+
+        return false;
     }
+
+    //     private void UpdateSubscriptionState(Product product)
+    //     {
+    // #if UNITY_ANDROID || UNITY_IOS
+    //     if (product == null)
+    //     {
+    //         noAdsSubscriptionActive = false;
+    //         return;
+    //     }
+
+    // #if UNITY_IOS
+    //         if (string.IsNullOrEmpty(product.receipt))
+    //         {
+    //             if (!isRefreshingReceipt)
+    //             {
+    //                 Debug.Log("[IAP] Receipt empty, refreshing...");
+    //                 RefreshAppleReceipt();
+    //             }
+    //             return;
+    //         }
+    // #endif
+
+
+    //         try
+    //         {
+    //         var subscriptionManager = new SubscriptionManager(product, null);
+    //         var info = subscriptionManager.getSubscriptionInfo();
+
+    //         bool subscribed = info.IsSubscribed() == Result.True;
+    //         bool expired = info.IsExpired() == Result.True;
+
+    //         Debug.Log($"[IAP] Subscribed={subscribed}, Expired={expired}, ExpireDate={info.getExpireDate()}");
+
+    //         noAdsSubscriptionActive = subscribed && !expired;
+    //     }
+    //     catch (Exception e)
+    //     {
+    //         Debug.LogError($"[IAP] Subscription check failed: {e}");
+    //         noAdsSubscriptionActive = false;
+    //     }
+    // #else
+    //         noAdsSubscriptionActive = false;
+    // #endif
+    //     }
+
     private IEnumerator RefreshSubscriptionStateDelayed()
     {
-        yield return new WaitForSeconds(1f); // allow receipt sync
+        yield return new WaitForSeconds(1.0f); // allow receipt sync
 
-        var product = storeController.products.WithID(NO_ADS_WEEKLY);
-        UpdateSubscriptionState(product);
+        Debug.Log("IAP RefreshSubscriptionStateDelayed");
+        //var product = storeController.products.WithID(NO_ADS_WEEKLY);
+        noAdsSubscriptionActive = UpdateSubscriptionState();
 
         if (noAdsSubscriptionActive)
         {
-            Debug.Log("[MonetizationManager] No-Ads subscription active (delayed)");
+            Debug.Log("[MonetizationManager] IAP No-Ads subscription active (delayed)");
             OnAdsRemoved?.Invoke(true);
 
         }
     }
 
+//#if UNITY_IOS
+//    private void RefreshAppleReceipt()
+//    {
+//        if (storeController == null || isRefreshingReceipt)
+//            return;
+
+//        isRefreshingReceipt = true;
+
+//        var apple = extensionProvider.GetExtension<IAppleExtensions>();
+
+//        apple.RefreshAppReceipt(
+//            success =>
+//            {
+//                Debug.Log("[IAP] Receipt refresh success");
+//                isRefreshingReceipt = false;
+
+//                var product = storeController.products.WithID(NO_ADS_WEEKLY);
+//                UpdateSubscriptionState(product);
+
+//                if (noAdsSubscriptionActive)
+//                {
+//                    OnAdsRemoved?.Invoke(true);
+//                }
+//            },
+//            error =>
+//            {
+//                Debug.LogError("[IAP] Receipt refresh failed: " + error);
+//                isRefreshingReceipt = false;
+//            }
+//        );
+//    }
+//#endif
+
+
 
 
     public void OnInitialized(IStoreController controller, IExtensionProvider extensions)
     {
+        Debug.Log("IAP OnInitialized");
         storeController = controller;
         iapInitialized = true;
-
+        extensionProvider = extensions;
 
         // Delay subscription check (important!)
         StartCoroutine(RefreshSubscriptionStateDelayed());
 
-        //var product = controller.products.WithID(NO_ADS_WEEKLY);
-        //UpdateSubscriptionState(product);
+        Product product = storeController.products.WithID(NO_ADS_WEEKLY);
+        if (product != null && product.metadata != null)
+        {
+            CachedPrice = product.metadata.localizedPriceString;
+            Debug.Log("IAP Price: " + CachedPrice);
 
-        //if (noAdsSubscriptionActive)
-        //{
-        //    Debug.Log("[MonetizationManager] No-Ads subscription active");
-        //    OnAdsRemoved?.Invoke(true);
-        //    try {
-        //        //IronSource.Agent.hideBanner();
-        //    } catch {
-
-        //    }
-        //}
+            OnPriceUpdated?.Invoke(CachedPrice);
+        }
     }
-
-    
-
 
     // Unity IAP requires BOTH overloads for compatibility
     public void OnInitializeFailed(InitializationFailureReason error)
     {
-        Debug.LogError($"[MonetizationManager] IAP Init Failed: {error}");
+        Debug.Log($"[MonetizationManager] IAP Init Failed: {error}");
     }
 
     public void OnInitializeFailed(InitializationFailureReason error, string message)
     {
-        Debug.LogError($"[MonetizationManager] IAP Init Failed: {error} - {message}");
+        Debug.Log($"[MonetizationManager] IAP Init Failed: {error} - {message}");
     }
 
     public void PurchaseProduct(string productId, Action<bool> onComplete)
@@ -477,15 +589,10 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
                 new Parameter(FirebaseAnalytics.ParameterItemID, productId)
             );
 
-            UpdateSubscriptionState(args.purchasedProduct);
+            //UpdateSubscriptionState(args.purchasedProduct);
+            Debug.Log("IAP : " + productId);
+            noAdsSubscriptionActive = true;
             OnAdsRemoved?.Invoke(noAdsSubscriptionActive);
-
-            if (noAdsSubscriptionActive)
-            {
-                try {
-                    //IronSource.Agent.hideBanner();
-                    } catch { }
-            }
         }
 
         return PurchaseProcessingResult.Complete;
@@ -513,32 +620,37 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         return;
     }
 
-    var apple = storeController.extensions.GetExtension<IAppleExtensions>();
-    Debug.Log("[RestorePurchases] Restoring purchases...");
-    apple.RestoreTransactions(OnRestoreCompleted);
+    //var apple = storeController.extensions.GetExtension<IAppleExtensions>();
+    //Debug.Log("[RestorePurchases] Restoring purchases...");
+    //apple.RestoreTransactions(OnRestoreCompleted);
+
+        var apple = extensionProvider.GetExtension<IAppleExtensions>();
+        apple.RestoreTransactions(OnRestoreCompleted);
 #else
         Debug.Log("[RestorePurchases] Restore not supported on this platform.");
 #endif
     }
     private void OnRestoreCompleted(bool success, string message)
     {
-//#if UNITY_IOS
-    Debug.Log($"[RestorePurchases] Completed: {success}, {message}");
+        //#if UNITY_IOS
+        Debug.Log($"[RestorePurchases] Completed: {success}, {message}");
 
-    if (success)
-    {
-            var product = storeController.products.WithID(NO_ADS_WEEKLY);
-            UpdateSubscriptionState(product);
+        if (success)
+        {
+
+            noAdsSubscriptionActive = UpdateSubscriptionState();
             if (noAdsSubscriptionActive)
             {
                 Debug.Log("[MonetizationManager] No-Ads subscription active");
                 OnAdsRemoved?.Invoke(true);
-                try {
+                try
+                {
                     //IronSource.Agent.hideBanner();
-                    } catch { }
+                }
+                catch { }
             }
         }
-//#endif
+        //#endif
     }
 
 
@@ -549,9 +661,11 @@ public class MonetizationManager : MonoBehaviour, IStoreListener
         SaveState();
         Debug.Log("Remove Ads purchased — ads disabled.");
         OnAdsRemoved?.Invoke(true);
-        try {
+        try
+        {
             //IronSource.Agent.hideBanner();
-            } catch { }
+        }
+        catch { }
     }
 
     private void SaveState()

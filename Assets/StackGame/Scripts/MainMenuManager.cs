@@ -32,6 +32,15 @@ public class MainMenuManager : MonoBehaviour
     public GameObject restorePurchasesButton;
 
 
+    [Header("Paywall Panel")]
+    public GameObject paywallPanel;
+    public Button paywallBuyButton;
+    public Text paywallPriceText;
+    public Button paywallRestoreBtn;
+    public Button paywallCloseBtn;
+    public Button paywallPrivacy;
+    public Button paywallLicese;
+
     [Header("Mode Selection Panel")]
     public GameObject modeSelectPanel;
     public Button classicModeButton;
@@ -79,6 +88,10 @@ public class MainMenuManager : MonoBehaviour
 
     void Start()
     {
+        if (MonetizationManager.Instance != null && !string.IsNullOrEmpty(MonetizationManager.Instance.CachedPrice))
+        {
+            UpdatePrice(MonetizationManager.Instance.CachedPrice);
+        }
         // TrackAppLaunch();
         SetupButtons();
         UpdateHighScore();
@@ -127,7 +140,23 @@ public class MainMenuManager : MonoBehaviour
             rateUsPopUp.SetActive(false);
         }
     }
+    private void showPaywall()
+    {
+        AnalyticsManager.Instance.LogEvent("paywall_open");
+        if (paywallPanel != null)
+        {
+            paywallPanel.SetActive(true);
+        }
 
+    }
+    private void hidePaywall()
+    {
+        AnalyticsManager.Instance.LogEvent("paywall_close");
+        if (paywallPanel != null)
+        {
+            paywallPanel.SetActive(false);
+        }
+    }
     void SetupButtons()
     {
         // Main menu buttons
@@ -141,10 +170,29 @@ public class MainMenuManager : MonoBehaviour
         if (removeAdsButton != null && MonetizationManager.Instance != null)
         {
             removeAdsButton.gameObject.SetActive(!MonetizationManager.Instance.IsAdsRemoved());
-            removeAdsButton.onClick.AddListener(BuyRemoveAds);
-            MonetizationManager.OnAdsRemoved += HandleAdsRemoved;
+            removeAdsButton.onClick.AddListener(showPaywall);
         }
-            
+
+        MonetizationManager.OnAdsRemoved += HandleAdsRemoved;
+
+        //paywall btns
+        paywallBuyButton.onClick.AddListener(BuyRemoveAds);
+        paywallRestoreBtn.onClick.AddListener(OnRestorePurchasesClicked);
+        paywallCloseBtn.onClick.AddListener(hidePaywall);
+
+#if UNITY_ANDROID
+        paywallRestoreBtn.gameObject.SetActive(false);
+        paywallPrivacy.gameObject.SetActive(false);
+        paywallLicese.gameObject.SetActive(false);
+        
+#endif
+#if UNITY_IOS
+        paywallRestoreBtn.gameObject.SetActive(true);
+        paywallPrivacy.gameObject.SetActive(true);
+        paywallLicese.gameObject.SetActive(true);
+#endif
+
+
 
         if (settingsButton != null)
             settingsButton.onClick.AddListener(OpenSettings);
@@ -227,7 +275,28 @@ public class MainMenuManager : MonoBehaviour
 
     private void HandleAdsRemoved(bool removed)
     {
+        Debug.Log("HandleAdsRemoved : " + removed);
         removeAdsButton.gameObject.SetActive(!removed);
+
+        if (removed)
+        {
+            paywallPanel.SetActive(!removed);
+        }
+    }
+
+    private void OnEnable()
+    {
+        MonetizationManager.OnPriceUpdated += UpdatePrice;
+    }
+
+    private void OnDisable()
+    {
+        MonetizationManager.OnPriceUpdated -= UpdatePrice;
+    }
+
+    private void UpdatePrice(string price)
+    {
+        paywallPriceText.text = price+" / Week";
     }
 
     void UpdateHighScore()
@@ -250,9 +319,9 @@ public class MainMenuManager : MonoBehaviour
 #if UNITY_ANDROID
         Application.OpenURL("market://details?id=" + Application.identifier);
 #elif UNITY_IOS
-    Application.OpenURL("itms-apps://itunes.apple.com/app/idYOUR_APP_ID?action=write-review");
+    Application.OpenURL("itms-apps://itunes.apple.com/app/id6758514120?action=write-review");
 #else
-    Application.OpenURL("https://your-website.com");
+    Application.OpenURL("");
 #endif
         HideRateUsPopup();
     }
@@ -265,10 +334,15 @@ public class MainMenuManager : MonoBehaviour
         Application.OpenURL("https://apps.apple.com/us/developer/vishal-sanap/id1041732969");
 #endif
     }
-    private void privacyPolicy()
+    public void privacyPolicy()
     {
 
         Application.OpenURL("https://www.watermelonlab.in/privacypolicy.html");
+    }
+    public void LicenseAgreement()
+    {
+
+        Application.OpenURL("https://www.apple.com/legal/internet-services/itunes/dev/stdeula/");
     }
 
     public void OpenModeSelection()
@@ -281,6 +355,7 @@ public class MainMenuManager : MonoBehaviour
 
     public void BuyRemoveAds()
     {
+        
         if(MonetizationManager.Instance!= null)
         MonetizationManager.Instance.PurchaseRemoveAds();
     }
