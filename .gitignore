@@ -161,3 +161,5 @@ ProjectSettings/ProjectSettings.asset
 !ProjectSettings/ProjectSettings.asset
 !Packages/manifest.json
 !Packages/packages-lock.json 
+Assets/Firebase/Plugins/x86_64/FirebaseCppApp-13_6_0.bundle
+Assets/Firebase/Plugins/x86_64/FirebaseCppApp-13_6_0.so
