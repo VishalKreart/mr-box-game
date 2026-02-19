@@ -18,7 +18,6 @@ public class MainMenuManager : MonoBehaviour
     public Button settingsButton;
     public Button removeAdsButton;
     public Button quitButton;
-    public TextMeshProUGUI titleText;
     public TextMeshProUGUI highScoreText;
     
     [Header("Settings Panel")]
@@ -357,7 +356,7 @@ public class MainMenuManager : MonoBehaviour
     {
         
         if(MonetizationManager.Instance!= null)
-        MonetizationManager.Instance.PurchaseRemoveAds();
+        MonetizationManager.Instance.PurchaseNoAdsWeekly();
     }
 
 

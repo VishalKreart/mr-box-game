@@ -13,9 +13,9 @@ public class ContinueUIManager : MonoBehaviour
         if (watchAdButton) watchAdButton.onClick.AddListener(OnWatchAd);
         if (cancelButton) cancelButton.onClick.AddListener(OnCancel);
 
-        // If a watch attempt finds no ad, we auto-close and finalize Game Over
-        if (MonetizationManager.Instance != null)
-            MonetizationManager.Instance.OnNoRewardedAdAvailable += HandleNoAdAvailable;
+        //// If a watch attempt finds no ad, we auto-close and finalize Game Over
+        //if (MonetizationManager.Instance != null)
+        //    MonetizationManager.Instance.OnNoRewardedAdAvailable += HandleNoAdAvailable;
     }
 
     private void OnDisable()
@@ -23,8 +23,8 @@ public class ContinueUIManager : MonoBehaviour
         if (watchAdButton) watchAdButton.onClick.RemoveListener(OnWatchAd);
         if (cancelButton) cancelButton.onClick.RemoveListener(OnCancel);
 
-        if (MonetizationManager.Instance != null)
-            MonetizationManager.Instance.OnNoRewardedAdAvailable -= HandleNoAdAvailable;
+        //if (MonetizationManager.Instance != null)
+        //    MonetizationManager.Instance.OnNoRewardedAdAvailable -= HandleNoAdAvailable;
     }
 
     // Old name kept for backward compatibility
@@ -43,12 +43,12 @@ public class ContinueUIManager : MonoBehaviour
     private void OnWatchAd()
     {
         Hide();
-        MonetizationManager.Instance.ShowRewardedAd(() =>
-        {
-            // Reward complete -> resume game
-            //GameManager.Instance.ResumeGame();
-            FindAnyObjectByType<GameManager>().ResumeGame();
-        });
+        //MonetizationManager.Instance.ShowRewardedAd(() =>
+        //{
+        //    // Reward complete -> resume game
+        //    //GameManager.Instance.ResumeGame();
+        //    FindAnyObjectByType<GameManager>().ResumeGame();
+        //});
     }
 
     private void OnCancel()

@@ -58,18 +58,18 @@ public class SaveTowerUI : MonoBehaviour
         SetButtonsInteractable(false);
         
         // Use the existing IAP purchase flow from MonetizationManager
-        MonetizationManager.Instance.PurchaseProduct("save_tower", (success) => {
-            if (success)
-            {
-                StartCoroutine(ResetTowerAndContinue());
-            }
-            else
-            {
-                if (messageText != null)
-                    messageText.text = "Purchase failed. Please try again.";
-                SetButtonsInteractable(true);
-            }
-        });
+        //MonetizationManager.Instance.PurchaseProduct("save_tower", (success) => {
+        //    if (success)
+        //    {
+        //        StartCoroutine(ResetTowerAndContinue());
+        //    }
+        //    else
+        //    {
+        //        if (messageText != null)
+        //            messageText.text = "Purchase failed. Please try again.";
+        //        SetButtonsInteractable(true);
+        //    }
+        //});
     }
     
     public void OnAdCompleted(bool success)

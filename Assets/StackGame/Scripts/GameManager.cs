@@ -259,11 +259,11 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
 
         // If a rewarded ad is available, show continue popup; else go straight to Game Over
-        if (MonetizationManager.Instance.CanContinue())
-        {
-            ShowContinueOptions();
-        }
-        else
+        //if (MonetizationManager.Instance.CanContinue())
+        //{
+        //    ShowContinueOptions();
+        //}
+        //else
         {
             GameOver();
         }
